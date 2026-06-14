@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6366f1">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FinTrack — Personal Finance Tracker</title>
@@ -1721,6 +1723,66 @@ setInterval(() => {
 }, 30000);
 </script>
 <script>
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  const installBtn = document.createElement('button');
+
+  installBtn.innerHTML = '📲 Install App';
+  installBtn.className = 'btn btn-primary';
+
+  installBtn.style.position = 'fixed';
+  installBtn.style.bottom = '20px';
+  installBtn.style.right = '20px';
+  installBtn.style.zIndex = '9999';
+
+  document.body.appendChild(installBtn);
+
+  installBtn.addEventListener('click', async () => {
+    deferredPrompt.prompt();
+
+    const choice = await deferredPrompt.userChoice;
+
+    if (choice.outcome === 'accepted') {
+      installBtn.remove();
+    }
+  });
+});
+</script>
+  <script>
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  const installBtn = document.createElement('button');
+
+  installBtn.innerHTML = '📲 Install App';
+  installBtn.className = 'btn btn-primary';
+
+  installBtn.style.position = 'fixed';
+  installBtn.style.bottom = '20px';
+  installBtn.style.right = '20px';
+  installBtn.style.zIndex = '9999';
+
+  document.body.appendChild(installBtn);
+
+  installBtn.addEventListener('click', async () => {
+    deferredPrompt.prompt();
+
+    const choice = await deferredPrompt.userChoice;
+
+    if (choice.outcome === 'accepted') {
+      installBtn.remove();
+    }
+  });
+});
+</script>
+  <script>
 let deferredPrompt;
 
 window.addEventListener('beforeinstallprompt', (e) => {
