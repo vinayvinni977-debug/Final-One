@@ -1856,6 +1856,19 @@ window.addEventListener('beforeinstallprompt', (e) => {
   <script>
 
 const APP_PIN = "2580";
+    <button
+  id="fingerprintBtn"
+  style="
+  margin-top:10px;
+  padding:10px 20px;
+  border:none;
+  border-radius:10px;
+  background:#22c55e;
+  color:white;
+  "
+>
+🔓 Unlock with Fingerprint
+</button>
 
 function unlockApp(){
 
@@ -1874,6 +1887,35 @@ function unlockApp(){
   }
 }
 
+</script>
+  <script>
+document.getElementById('fingerprintBtn')
+.addEventListener('click', async () => {
+
+  if (!window.PublicKeyCredential) {
+    alert("Fingerprint not supported on this device");
+    return;
+  }
+
+  try {
+
+    await navigator.credentials.get({
+      publicKey: {
+        challenge: new Uint8Array(32),
+        timeout: 60000,
+        userVerification: "required"
+      }
+    });
+
+    document.getElementById('pinLock').style.display = 'none';
+
+  } catch (err) {
+
+    alert("Fingerprint verification failed");
+
+  }
+
+});
 </script>
 </body>
 </html>
