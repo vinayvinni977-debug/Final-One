@@ -217,34 +217,48 @@ flex-direction:column;
 ">
   <h2 style="color:white;margin-bottom:20px;">🔒 FinTrack</h2>
 
-  <input
-    type="password"
-    id="pinInput"
-    maxlength="4"
-    placeholder="Enter PIN"
-    style="
-    width:200px;
-    padding:12px;
-    text-align:center;
-    font-size:24px;
-    border-radius:10px;
-    border:none;
-    "
-  >
+ <input
+  type="password"
+  id="pinInput"
+  maxlength="4"
+  placeholder="Enter PIN"
+  style="
+  width:200px;
+  padding:12px;
+  text-align:center;
+  font-size:24px;
+  border-radius:10px;
+  border:none;
+  "
+>
 
-  <button
-    onclick="unlockApp()"
-    style="
-    margin-top:15px;
-    padding:10px 20px;
-    border:none;
-    border-radius:10px;
-    background:#6366f1;
-    color:white;
-    "
-  >
-    Unlock
-  </button>
+<button
+  id="fingerprintBtn"
+  style="
+  margin-top:15px;
+  padding:10px 20px;
+  border:none;
+  border-radius:10px;
+  background:#22c55e;
+  color:white;
+  "
+>
+  🔓 Unlock with Fingerprint
+</button>
+
+<button
+  onclick="unlockApp()"
+  style="
+  margin-top:15px;
+  padding:10px 20px;
+  border:none;
+  border-radius:10px;
+  background:#6366f1;
+  color:white;
+  "
+>
+  Unlock
+</button>
 </div>
 <div class="app">
 
@@ -1856,20 +1870,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
   <script>
 
 const APP_PIN = "2580";
-    <button
-  id="fingerprintBtn"
-  style="
-  margin-top:10px;
-  padding:10px 20px;
-  border:none;
-  border-radius:10px;
-  background:#22c55e;
-  color:white;
-  "
->
-🔓 Unlock with Fingerprint
-</button>
-
+   
 function unlockApp(){
 
   const pin =
