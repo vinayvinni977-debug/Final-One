@@ -205,48 +205,6 @@ input:checked + .slider:before{transform:translateX(20px);}
 </style>
 </head>
 <body>
-  <div id="pinLock" style="
-position:fixed;
-inset:0;
-background:#0f1117;
-z-index:99999;
-display:flex;
-justify-content:center;
-align-items:center;
-flex-direction:column;
-">
-  <h2 style="color:white;margin-bottom:20px;">🔒 FinTrack</h2>
-
- <input
-  type="password"
-  id="pinInput"
-  maxlength="4"
-  placeholder="Enter PIN"
-  style="
-  width:200px;
-  padding:12px;
-  text-align:center;
-  font-size:24px;
-  border-radius:10px;
-  border:none;
-  "
->
-
-
-<button
-  onclick="unlockApp()"
-  style="
-  margin-top:15px;
-  padding:10px 20px;
-  border:none;
-  border-radius:10px;
-  background:#6366f1;
-  color:white;
-  "
->
-  Unlock
-</button>
-</div>
 <div class="app">
 
   <!-- SIDEBAR -->
@@ -1853,28 +1811,6 @@ window.addEventListener('beforeinstallprompt', (e) => {
     }
   });
 });
-</script>
-  <script>
-
-const APP_PIN = "2580";
-   
-function unlockApp(){
-
-  const pin =
-  document.getElementById('pinInput').value;
-
-  if(pin === APP_PIN){
-
-    document.getElementById('pinLock')
-      .style.display='none';
-
-  }else{
-
-    alert("Wrong PIN");
-
-  }
-}
-
 </script>
 </body>
 </html>
