@@ -67,12 +67,6 @@ input,select,textarea{font-family:inherit;}
 .card{
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
   padding:18px;box-shadow:var(--shadow);position:relative;overflow:hidden;
-  transition:all .2s ease;
-}
-.card:hover{
-  transform:translateY(-4px);
-  box-shadow:0 8px 28px rgba(99,102,241,.3);
-  border-color:var(--accent);
 }
 .card .label{font-size:12.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
 .card .value{font-size:26px;font-weight:800;margin-top:8px;}
@@ -130,13 +124,11 @@ table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:620px;}
 th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
 th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px;}
 tbody tr:hover{background:var(--card2);}
-tbody tr{transition:background .1s ease;}
 .badge{padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700;display:inline-block;}
 .badge.pending{background:rgba(245,158,11,.15);color:var(--yellow);}
 .badge.partial{background:rgba(59,130,246,.15);color:var(--blue);}
 .badge.received,.badge.paid{background:rgba(34,197,94,.15);color:var(--green);}
 .badge.unpaid,.badge.due{background:rgba(239,68,68,.15);color:var(--red);}
-.badge.overdue{background:rgba(239,68,68,.25);color:var(--red);font-weight:800;}
 .row-actions{display:flex;gap:6px;}
 .empty-row td{text-align:center;color:var(--muted);padding:24px;}
 
@@ -192,12 +184,9 @@ input:checked + .slider:before{transform:translateX(20px);}
 /* Modal-ish confirm */
 .overlay{
   position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:500;
-  animation:fadeIn .2s ease;
 }
-@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 .overlay.show{display:flex;}
-.confirm-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:340px;text-align:center;box-shadow:var(--shadow);animation:slideUp .3s ease;}
-@keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.confirm-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:340px;text-align:center;box-shadow:var(--shadow);}
 .confirm-box p{margin:10px 0 18px;color:var(--muted);font-size:14px;}
 .confirm-box .form-actions{justify-content:center;}
 
@@ -212,12 +201,52 @@ input:checked + .slider:before{transform:translateX(20px);}
 @media (max-width:480px){
   .card .value{font-size:21px;}
   .topbar h1{font-size:20px;}
-  .card:hover{transform:translateY(-2px);}
 }
 </style>
 </head>
 <body>
+  <div id="pinLock" style="
+position:fixed;
+inset:0;
+background:#0f1117;
+z-index:99999;
+display:flex;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+">
+  <h2 style="color:white;margin-bottom:20px;">🔒 FinTrack</h2>
 
+ <input
+  type="password"
+  id="pinInput"
+  maxlength="4"
+  placeholder="Enter PIN"
+  style="
+  width:200px;
+  padding:12px;
+  text-align:center;
+  font-size:24px;
+  border-radius:10px;
+  border:none;
+  "
+>
+
+
+<button
+  onclick="unlockApp()"
+  style="
+  margin-top:15px;
+  padding:10px 20px;
+  border:none;
+  border-radius:10px;
+  background:#6366f1;
+  color:white;
+  "
+>
+  Unlock
+</button>
+</div>
 <div class="app">
 
   <!-- SIDEBAR -->
@@ -740,6 +769,1112 @@ input:checked + .slider:before{transform:translateX(20px);}
   </div>
 </div>
 
-<script src="dashboard-drilldown.js"></script>
+<script>
+/* ================= STORAGE ================= */
+const DB_KEY = 'fintrack_data_v1';
+const THEME_KEY = 'fintrack_theme';
+const API_URL_KEY = 'fintrack_api_url';
+const API_SECRET_KEY = 'fintrack_api_secret';
+
+const defaultData = { expenses: [], lends: [], cards: [], commitments: [], investments: [], cycles: [] };
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(DB_KEY);
+    if(!raw) return JSON.parse(JSON.stringify(defaultData));
+    const parsed = JSON.parse(raw);
+    return Object.assign(JSON.parse(JSON.stringify(defaultData)), parsed);
+  }catch(e){ return JSON.parse(JSON.stringify(defaultData)); }
+}
+function saveData(){ localStorage.setItem(DB_KEY, JSON.stringify(DATA)); }
+
+let DATA = loadData();
+
+/* ================= CLOUD SYNC (Google Sheets via Apps Script) ================= */
+function getApiUrl(){ return (localStorage.getItem(API_URL_KEY) || '').trim(); }
+function getApiSecret(){ return (localStorage.getItem(API_SECRET_KEY) || '').trim(); }
+function isCloudConnected(){ return !!getApiUrl(); }
+
+function setSyncStatus(text){
+  const el = document.getElementById('syncStatus');
+  if(el) el.textContent = text;
+}
+
+/**
+ * Sends a request to the Apps Script Web App.
+ * GET for fetching, POST for save/delete/replaceAll.
+ * Fails silently (returns null) if not connected or on error,
+ * so the app always works offline using Local Storage.
+ */
+async function apiRequest(action, payload){
+  const url = getApiUrl();
+  if(!url) return null;
+  try{
+    if(action === 'getAll'){
+      const sep = url.includes('?') ? '&' : '?';
+      const secretParam = getApiSecret() ? `&secret=${encodeURIComponent(getApiSecret())}` : '';
+      const res = await fetch(`${url}${sep}action=getAll${secretParam}`);
+      const json = await res.json();
+      if(!json.ok) throw new Error(json.error || 'Unknown API error');
+      return json.data;
+    } else {
+      const body = Object.assign({ action, secret: getApiSecret() }, payload);
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight
+        body: JSON.stringify(body)
+      });
+      const json = await res.json();
+      if(!json.ok) throw new Error(json.error || 'Unknown API error');
+      return json;
+    }
+  }catch(err){
+    console.error('Cloud sync error:', err);
+    setSyncStatus('⚠️ Sync error: ' + err.message);
+    return null;
+  }
+}
+
+/** Push a single record (add/edit) to the cloud in the background. */
+function cloudSave(table, row){
+  if(!isCloudConnected()) return;
+  apiRequest('save', { table, row });
+}
+/** Delete a single record from the cloud in the background. */
+function cloudDelete(table, id){
+  if(!isCloudConnected()) return;
+  apiRequest('delete', { table, id });
+}
+/** Push ALL local data to the cloud, overwriting it. */
+async function cloudPushAll(){
+  if(!isCloudConnected()){ showToast('Connect a Google Sheet URL first', true); return; }
+  setSyncStatus('⬆ Pushing to Google Sheet...');
+  const result = await apiRequest('replaceAll', { data: DATA });
+  if(result){
+    setSyncStatus('✅ Connected · Last pushed ' + new Date().toLocaleTimeString());
+    showToast('Data pushed to Google Sheet');
+  } else {
+    showToast('Push failed — check connection', true);
+  }
+}
+/** Pull ALL data from the cloud, overwriting local data. */
+async function cloudPullAll(){
+  if(!isCloudConnected()){ showToast('Connect a Google Sheet URL first', true); return; }
+  setSyncStatus('⬇ Pulling from Google Sheet...');
+  const data = await apiRequest('getAll');
+  if(data){
+    DATA = Object.assign(JSON.parse(JSON.stringify(defaultData)), data);
+    // Coerce numeric fields back to numbers (Sheets API may return them fine, but be safe)
+    coerceNumericFields();
+    saveData();
+    renderAll();
+    setSyncStatus('✅ Connected · Last synced ' + new Date().toLocaleTimeString());
+    showToast('Data pulled from Google Sheet');
+  } else {
+    setSyncStatus('⚠️ Pull failed — check URL/secret');
+    showToast('Pull failed — check connection', true);
+  }
+}
+function coerceNumericFields(){
+  const numFields = {
+    expenses:['amount'], lends:['amount'], cards:['amount'],
+    cycles:['billPaid','withdrawn','charges'], commitments:['amount'], investments:['amount']
+  };
+  Object.keys(numFields).forEach(table=>{
+    (DATA[table]||[]).forEach(row=>{
+      numFields[table].forEach(f=>{ if(row[f] !== undefined) row[f] = Number(row[f]) || 0; });
+    });
+  });
+}
+
+async function initCloudSync(){
+  const apiUrl = getApiUrl();
+  const apiSecret = getApiSecret();
+  document.getElementById('apiUrl').value = apiUrl;
+  document.getElementById('apiSecret').value = apiSecret;
+
+  if(!apiUrl){
+    setSyncStatus('Offline (Local Storage only)');
+    return;
+  }
+  setSyncStatus('⏳ Connecting...');
+  const data = await apiRequest('getAll');
+  if(data){
+    // If the sheet has any data, use it as the source of truth.
+    const hasCloudData = Object.values(data).some(arr => Array.isArray(arr) && arr.length > 0);
+    if(hasCloudData){
+      DATA = Object.assign(JSON.parse(JSON.stringify(defaultData)), data);
+      coerceNumericFields();
+      saveData();
+      renderAll();
+    }
+    setSyncStatus('✅ Connected · Last synced ' + new Date().toLocaleTimeString());
+  } else {
+    setSyncStatus('⚠️ Could not connect — check URL/secret (using Local Storage)');
+  }
+}
+
+/* ================= HELPERS ================= */
+const $ = id => document.getElementById(id);
+const fmt = n => '₹' + Number(n||0).toLocaleString('en-IN', {maximumFractionDigits:2});
+const todayStr = () => new Date().toISOString().slice(0,10);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+function showToast(msg, isError=false){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.toggle('error', isError);
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+let confirmCallback = null;
+function askConfirm(title, msg, cb){
+  $('confirmTitle').textContent = title;
+  $('confirmMsg').textContent = msg;
+  confirmCallback = cb;
+  $('confirmOverlay').classList.add('show');
+}
+$('confirmCancel').onclick = ()=>{ $('confirmOverlay').classList.remove('show'); confirmCallback=null; };
+$('confirmOk').onclick = ()=>{
+  if(confirmCallback) confirmCallback();
+  $('confirmOverlay').classList.remove('show');
+  confirmCallback=null;
+};
+
+function monthKey(dateStr){ return (dateStr||'').slice(0,7); }
+function currentMonthKey(){ return new Date().toISOString().slice(0,7); }
+
+/* ================= NAVIGATION ================= */
+const navItems = document.querySelectorAll('.nav-item');
+navItems.forEach(item=>{
+  item.addEventListener('click', ()=>{
+    navItems.forEach(n=>n.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    $('page-'+item.dataset.page).classList.add('active');
+    $('sidebar').classList.remove('open');
+    if(item.dataset.page === 'dashboard') renderDashboard();
+    if(item.dataset.page === 'reports') renderReport();
+    if(item.dataset.page === 'cccycle') renderCycles();
+  });
+});
+['menuToggle','menuToggle2','menuToggle3','menuToggle4','menuToggle4b','menuToggle5','menuToggle6','menuToggle7','menuToggle8'].forEach(id=>{
+  const el = $(id);
+  if(el) el.addEventListener('click', ()=> $('sidebar').classList.toggle('open'));
+});
+
+/* ================= THEME ================= */
+function applyTheme(theme){
+  document.body.classList.toggle('light', theme === 'light');
+  $('darkModeToggle').checked = theme !== 'light';
+}
+$('darkModeToggle').addEventListener('change', e=>{
+  const theme = e.target.checked ? 'dark' : 'light';
+  localStorage.setItem(THEME_KEY, theme);
+  applyTheme(theme);
+  renderAllCharts();
+});
+applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+
+/* ================= EXPENSES ================= */
+const formExpense = $('formExpense');
+formExpense.addEventListener('submit', e=>{
+  e.preventDefault();
+  const id = $('expId').value || uid();
+  const entry = {
+    id,
+    date: $('expDate').value,
+    amount: parseFloat($('expAmount').value),
+    category: $('expCategory').value,
+    method: $('expMethod').value,
+    notes: $('expNotes').value.trim()
+  };
+  const idx = DATA.expenses.findIndex(x=>x.id===id);
+  if(idx>=0) DATA.expenses[idx] = entry; else DATA.expenses.push(entry);
+  saveData();
+  cloudSave('expenses', entry);
+  formExpense.reset();
+  $('expId').value='';
+  $('expDate').value = todayStr();
+  renderExpenses();
+  renderDashboard();
+  showToast('Expense saved');
+});
+$('expReset').addEventListener('click', ()=>{ formExpense.reset(); $('expId').value=''; $('expDate').value = todayStr(); });
+
+function editExpense(id){
+  const e = DATA.expenses.find(x=>x.id===id);
+  if(!e) return;
+  $('expId').value=e.id; $('expDate').value=e.date; $('expAmount').value=e.amount;
+  $('expCategory').value=e.category; $('expMethod').value=e.method; $('expNotes').value=e.notes||'';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteExpense(id){
+  askConfirm('Delete Expense','This expense entry will be permanently removed.', ()=>{
+    DATA.expenses = DATA.expenses.filter(x=>x.id!==id);
+    saveData(); cloudDelete('expenses', id); renderExpenses(); renderDashboard();
+    showToast('Expense deleted');
+  });
+}
+
+function renderExpenses(){
+  let list = [...DATA.expenses].sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  const cat = $('expFilterCategory').value;
+  const method = $('expFilterMethod').value;
+  const month = $('expFilterMonth').value;
+  if(cat) list = list.filter(x=>x.category===cat);
+  if(method) list = list.filter(x=>x.method===method);
+  if(month) list = list.filter(x=>monthKey(x.date)===month);
+
+  const tbody = $('expTableBody');
+  if(list.length===0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No expenses found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(e=>`
+    <tr>
+      <td>${e.date}</td>
+      <td>${fmt(e.amount)}</td>
+      <td>${e.category}</td>
+      <td>${e.method}</td>
+      <td>${e.notes ? escapeHtml(e.notes) : '—'}</td>
+      <td class="row-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editExpense('${e.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteExpense('${e.id}')">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+['expFilterCategory','expFilterMethod','expFilterMonth'].forEach(id=> $(id).addEventListener('change', renderExpenses));
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ================= MONEY TO COLLECT ================= */
+const formLend = $('formLend');
+formLend.addEventListener('submit', e=>{
+  e.preventDefault();
+  const id = $('lendId').value || uid();
+  const entry = {
+    id,
+    name: $('lendName').value.trim(),
+    amount: parseFloat($('lendAmount').value),
+    dateGiven: $('lendDateGiven').value,
+    dueDate: $('lendDueDate').value,
+    status: $('lendStatus').value,
+    notes: $('lendNotes').value.trim()
+  };
+  const idx = DATA.lends.findIndex(x=>x.id===id);
+  if(idx>=0) DATA.lends[idx]=entry; else DATA.lends.push(entry);
+  saveData();
+  cloudSave('lends', entry);
+  formLend.reset();
+  $('lendId').value='';
+  $('lendStatus').value='Pending';
+  renderLends(); renderDashboard();
+  showToast('Entry saved');
+});
+$('lendReset').addEventListener('click', ()=>{ formLend.reset(); $('lendId').value=''; $('lendStatus').value='Pending'; });
+
+function editLend(id){
+  const l = DATA.lends.find(x=>x.id===id);
+  if(!l) return;
+  $('lendId').value=l.id; $('lendName').value=l.name; $('lendAmount').value=l.amount;
+  $('lendDateGiven').value=l.dateGiven; $('lendDueDate').value=l.dueDate||'';
+  $('lendStatus').value=l.status; $('lendNotes').value=l.notes||'';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteLend(id){
+  askConfirm('Delete Entry','This lending record will be permanently removed.', ()=>{
+    DATA.lends = DATA.lends.filter(x=>x.id!==id);
+    saveData(); cloudDelete('lends', id); renderLends(); renderDashboard();
+    showToast('Entry deleted');
+  });
+}
+function statusClass(status){
+  if(status==='Pending') return 'pending';
+  if(status==='Partially Received') return 'partial';
+  if(status==='Received') return 'received';
+  if(status==='Paid') return 'paid';
+  if(status==='Unpaid') return 'unpaid';
+  return '';
+}
+function renderLends(){
+  const list = [...DATA.lends].sort((a,b)=> (b.dateGiven||'').localeCompare(a.dateGiven||''));
+  const tbody = $('lendTableBody');
+  if(list.length===0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No entries found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(l=>`
+    <tr>
+      <td>${escapeHtml(l.name)}</td>
+      <td>${fmt(l.amount)}</td>
+      <td>${l.dateGiven||'—'}</td>
+      <td>${l.dueDate||'—'}</td>
+      <td><span class="badge ${statusClass(l.status)}">${l.status}</span></td>
+      <td>${l.notes ? escapeHtml(l.notes) : '—'}</td>
+      <td class="row-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editLend('${l.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteLend('${l.id}')">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+
+/* ================= CREDIT CARDS ================= */
+const CARD_NAMES = ['ICICI','HDFC','HSBC','OneCard','YES Bank'];
+const formCard = $('formCard');
+formCard.addEventListener('submit', e=>{
+  e.preventDefault();
+  const id = $('cardId').value || uid();
+  const entry = {
+    id,
+    cardName: $('cardName').value,
+    amount: parseFloat($('cardAmount').value),
+    txnDate: $('cardTxnDate').value,
+    dueDate: $('cardDueDate').value,
+    notes: $('cardNotes').value.trim()
+  };
+  const idx = DATA.cards.findIndex(x=>x.id===id);
+  if(idx>=0) DATA.cards[idx]=entry; else DATA.cards.push(entry);
+  saveData();
+  cloudSave('cards', entry);
+  formCard.reset();
+  $('cardId').value='';
+  renderCards(); renderDashboard();
+  showToast('Transaction saved');
+});
+$('cardReset').addEventListener('click', ()=>{ formCard.reset(); $('cardId').value=''; });
+
+function editCard(id){
+  const c = DATA.cards.find(x=>x.id===id);
+  if(!c) return;
+  $('cardId').value=c.id; $('cardName').value=c.cardName; $('cardAmount').value=c.amount;
+  $('cardTxnDate').value=c.txnDate; $('cardDueDate').value=c.dueDate; $('cardNotes').value=c.notes||'';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteCard(id){
+  askConfirm('Delete Transaction','This card transaction will be permanently removed.', ()=>{
+    DATA.cards = DATA.cards.filter(x=>x.id!==id);
+    saveData(); cloudDelete('cards', id); renderCards(); renderDashboard();
+    showToast('Transaction deleted');
+  });
+}
+function renderCardSummary(){
+  const grid = $('cardSummaryGrid');
+  const colors = ['blue','purple','cyan','green','yellow'];
+  grid.innerHTML = CARD_NAMES.map((name,i)=>{
+    const total = DATA.cards.filter(c=>c.cardName===name).reduce((s,c)=>s+c.amount,0);
+    return `<div class="card ${colors[i%colors.length]}">
+      <div class="icon-badge">💳</div>
+      <div class="label">${name}</div>
+      <div class="value">${fmt(total)}</div>
+      <div class="sub">Total outstanding</div>
+    </div>`;
+  }).join('');
+}
+function renderCards(){
+  renderCardSummary();
+  let list = [...DATA.cards].sort((a,b)=> (b.txnDate||'').localeCompare(a.txnDate||''));
+  const filter = $('cardFilter').value;
+  if(filter) list = list.filter(c=>c.cardName===filter);
+  const tbody = $('cardTableBody');
+  if(list.length===0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No transactions found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(c=>`
+    <tr>
+      <td>${c.cardName}</td>
+      <td>${fmt(c.amount)}</td>
+      <td>${c.txnDate}</td>
+      <td>${c.dueDate}</td>
+      <td>${c.notes ? escapeHtml(c.notes) : '—'}</td>
+      <td class="row-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editCard('${c.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCard('${c.id}')">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+$('cardFilter').addEventListener('change', renderCards);
+
+/* ================= CC PAY-WITHDRAW CYCLE ================= */
+const formCycle = $('formCycle');
+formCycle.addEventListener('submit', e=>{
+  e.preventDefault();
+  const id = $('cycleId').value || uid();
+  const entry = {
+    id,
+    cardName: $('cycleCardName').value,
+    date: $('cycleDate').value,
+    billPaid: parseFloat($('cycleBillPaid').value) || 0,
+    withdrawn: parseFloat($('cycleWithdrawn').value) || 0,
+    charges: parseFloat($('cycleCharges').value) || 0,
+    notes: $('cycleNotes').value.trim()
+  };
+  const idx = DATA.cycles.findIndex(x=>x.id===id);
+  if(idx>=0) DATA.cycles[idx]=entry; else DATA.cycles.push(entry);
+  saveData();
+  cloudSave('cycles', entry);
+  formCycle.reset();
+  $('cycleId').value='';
+  $('cycleDate').value = todayStr();
+  renderCycles(); renderDashboard();
+  showToast('Cycle entry saved');
+});
+$('cycleReset').addEventListener('click', ()=>{ formCycle.reset(); $('cycleId').value=''; $('cycleDate').value = todayStr(); });
+
+function editCycle(id){
+  const c = DATA.cycles.find(x=>x.id===id);
+  if(!c) return;
+  $('cycleId').value=c.id; $('cycleCardName').value=c.cardName; $('cycleDate').value=c.date;
+  $('cycleBillPaid').value=c.billPaid; $('cycleWithdrawn').value=c.withdrawn;
+  $('cycleCharges').value=c.charges; $('cycleNotes').value=c.notes||'';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteCycle(id){
+  askConfirm('Delete Cycle Entry','This cycle record will be permanently removed.', ()=>{
+    DATA.cycles = DATA.cycles.filter(x=>x.id!==id);
+    saveData(); cloudDelete('cycles', id); renderCycles(); renderDashboard();
+    showToast('Cycle entry deleted');
+  });
+}
+function renderCycles(){
+  let list = [...DATA.cycles].sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  const filter = $('cycleFilter').value;
+  if(filter) list = list.filter(c=>c.cardName===filter);
+
+  const mk = currentMonthKey();
+  const monthTotal = DATA.cycles.filter(c=>monthKey(c.date)===mk).reduce((s,c)=>s+c.charges,0);
+  const allTotal = DATA.cycles.reduce((s,c)=>s+c.charges,0);
+  $('cycleMonthTotal').textContent = fmt(monthTotal);
+  $('cycleAllTotal').textContent = fmt(allTotal);
+
+  const tbody = $('cycleTableBody');
+  if(list.length===0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No cycle entries found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(c=>`
+    <tr>
+      <td>${c.date}</td>
+      <td>${c.cardName}</td>
+      <td>${fmt(c.billPaid)}</td>
+      <td>${fmt(c.withdrawn)}</td>
+      <td>${fmt(c.charges)}</td>
+      <td>${c.notes ? escapeHtml(c.notes) : '—'}</td>
+      <td class="row-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editCycle('${c.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCycle('${c.id}')">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+$('cycleFilter').addEventListener('change', renderCycles);
+
+/* ================= MONTHLY COMMITMENTS ================= */
+const formCommit = $('formCommit');
+formCommit.addEventListener('submit', e=>{
+  e.preventDefault();
+  const id = $('commitId').value || uid();
+  const entry = {
+    id,
+    name: $('commitName').value.trim(),
+    amount: parseFloat($('commitAmount').value),
+    dueDate: $('commitDueDate').value,
+    status: $('commitStatus').value
+  };
+  const idx = DATA.commitments.findIndex(x=>x.id===id);
+  if(idx>=0) DATA.commitments[idx]=entry; else DATA.commitments.push(entry);
+  saveData();
+  cloudSave('commitments', entry);
+  formCommit.reset();
+  $('commitId').value='';
+  $('commitStatus').value='Unpaid';
+  renderCommitments(); renderDashboard();
+  showToast('Commitment saved');
+});
+$('commitReset').addEventListener('click', ()=>{ formCommit.reset(); $('commitId').value=''; $('commitStatus').value='Unpaid'; });
+
+function editCommit(id){
+  const c = DATA.commitments.find(x=>x.id===id);
+  if(!c) return;
+  $('commitId').value=c.id; $('commitName').value=c.name; $('commitAmount').value=c.amount;
+  $('commitDueDate').value=c.dueDate; $('commitStatus').value=c.status;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteCommit(id){
+  askConfirm('Delete Commitment','This commitment will be permanently removed.', ()=>{
+    DATA.commitments = DATA.commitments.filter(x=>x.id!==id);
+    saveData(); cloudDelete('commitments', id); renderCommitments(); renderDashboard();
+    showToast('Commitment deleted');
+  });
+}
+function renderCommitments(){
+  const list = [...DATA.commitments].sort((a,b)=> (a.dueDate||'').localeCompare(b.dueDate||''));
+  const tbody = $('commitTableBody');
+  if(list.length===0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No commitments found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(c=>`
+    <tr>
+      <td>${escapeHtml(c.name)}</td>
+      <td>${fmt(c.amount)}</td>
+      <td>${c.dueDate}</td>
+      <td><span class="badge ${statusClass(c.status)}">${c.status}</span></td>
+      <td class="row-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editCommit('${c.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCommit('${c.id}')">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+
+/* ================= INVESTMENTS ================= */
+const formInvest = $('formInvest');
+formInvest.addEventListener('submit', e=>{
+  e.preventDefault();
+  const id = $('investId').value || uid();
+  const entry = {
+    id,
+    name: $('investName').value.trim(),
+    amount: parseFloat($('investAmount').value),
+    date: $('investDate').value,
+    notes: $('investNotes').value.trim()
+  };
+  const idx = DATA.investments.findIndex(x=>x.id===id);
+  if(idx>=0) DATA.investments[idx]=entry; else DATA.investments.push(entry);
+  saveData();
+  cloudSave('investments', entry);
+  formInvest.reset();
+  $('investId').value='';
+  renderInvestments(); renderDashboard();
+  showToast('Investment saved');
+});
+$('investReset').addEventListener('click', ()=>{ formInvest.reset(); $('investId').value=''; });
+
+function editInvest(id){
+  const i = DATA.investments.find(x=>x.id===id);
+  if(!i) return;
+  $('investId').value=i.id; $('investName').value=i.name; $('investAmount').value=i.amount;
+  $('investDate').value=i.date; $('investNotes').value=i.notes||'';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteInvest(id){
+  askConfirm('Delete Investment','This investment record will be permanently removed.', ()=>{
+    DATA.investments = DATA.investments.filter(x=>x.id!==id);
+    saveData(); cloudDelete('investments', id); renderInvestments(); renderDashboard();
+    showToast('Investment deleted');
+  });
+}
+function renderInvestments(){
+  const list = [...DATA.investments].sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  const tbody = $('investTableBody');
+  if(list.length===0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No investments found</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(i=>`
+    <tr>
+      <td>${escapeHtml(i.name)}</td>
+      <td>${fmt(i.amount)}</td>
+      <td>${i.date}</td>
+      <td>${i.notes ? escapeHtml(i.notes) : '—'}</td>
+      <td class="row-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editInvest('${i.id}')">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteInvest('${i.id}')">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+
+/* ================= DASHBOARD CALC ================= */
+function calcTotals(){
+  const mk = currentMonthKey();
+  const totalExpensesMonth = DATA.expenses.filter(e=>monthKey(e.date)===mk).reduce((s,e)=>s+e.amount,0);
+
+  const moneyToCollect = DATA.lends.reduce((s,l)=>{
+    if(l.status === 'Received') return s;
+    if(l.status === 'Partially Received') return s + (l.amount * 0.5); // estimate remaining
+    return s + l.amount; // Pending = full amount
+  },0);
+
+  const cardOutstanding = DATA.cards.reduce((s,c)=>s+c.amount,0);
+
+  const commitmentsTotal = DATA.commitments.reduce((s,c)=>s+c.amount,0);
+
+  const investmentsTotal = DATA.investments.reduce((s,i)=>s+i.amount,0);
+
+  const cycleChargesMonth = DATA.cycles.filter(c=>monthKey(c.date)===mk).reduce((s,c)=>s+c.charges,0);
+
+  const netPosition = moneyToCollect + investmentsTotal - cardOutstanding - commitmentsTotal - cycleChargesMonth;
+
+  return {totalExpensesMonth, moneyToCollect, cardOutstanding, commitmentsTotal, investmentsTotal, cycleChargesMonth, netPosition};
+}
+
+function renderDashboard(){
+  const t = calcTotals();
+  $('dTotalExpenses').textContent = fmt(t.totalExpensesMonth);
+  $('dMoneyToCollect').textContent = fmt(t.moneyToCollect);
+  $('dCardOutstanding').textContent = fmt(t.cardOutstanding);
+  $('dCommitments').textContent = fmt(t.commitmentsTotal);
+  $('dCycleCharges').textContent = fmt(t.cycleChargesMonth);
+  $('dInvestments').textContent = fmt(t.investmentsTotal);
+  $('dNetPosition').textContent = fmt(t.netPosition);
+  const netCard = $('netCard');
+  netCard.classList.remove('pos','neg');
+  netCard.classList.add(t.netPosition >= 0 ? 'pos' : 'neg');
+
+  $('todayDate').textContent = new Date().toLocaleDateString('en-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+  renderAlerts();
+  renderAllCharts();
+}
+
+/* ================= ALERTS ================= */
+function daysUntil(dateStr){
+  if(!dateStr) return null;
+  const d1 = new Date(dateStr); d1.setHours(0,0,0,0);
+  const d2 = new Date(); d2.setHours(0,0,0,0);
+  return Math.round((d1-d2)/(1000*60*60*24));
+}
+function renderAlerts(){
+  const alerts = [];
+
+  // Credit card due dates
+  DATA.cards.forEach(c=>{
+    const days = daysUntil(c.dueDate);
+    if(days !== null && days <= 7){
+      alerts.push({title:`${c.cardName} card payment due`, sub:`Due ${c.dueDate}`, amt:fmt(c.amount), days});
+    }
+  });
+
+  // EMI / commitment due dates
+  DATA.commitments.forEach(c=>{
+    if(c.status === 'Paid') return;
+    const days = daysUntil(c.dueDate);
+    if(days !== null && days <= 7){
+      alerts.push({title:`${c.name} payment due`, sub:`Due ${c.dueDate}`, amt:fmt(c.amount), days});
+    }
+  });
+
+  // Money expected from borrowers
+  DATA.lends.forEach(l=>{
+    if(l.status === 'Received') return;
+    const days = daysUntil(l.dueDate);
+    if(days !== null && days <= 7){
+      alerts.push({title:`Collect from ${l.name}`, sub:`Due ${l.dueDate}`, amt:fmt(l.amount), days, type:'collect'});
+    }
+  });
+
+  alerts.sort((a,b)=>a.days-b.days);
+
+  const list = $('alertsList');
+  if(alerts.length===0){
+    list.innerHTML = '<div class="alert-item ok"><div><div class="a-title">All clear 🎉</div><div class="a-sub">No upcoming dues in the next 7 days</div></div></div>';
+    return;
+  }
+  list.innerHTML = alerts.map(a=>{
+    let cls = a.days < 0 ? 'urgent' : (a.days <= 2 ? 'urgent' : '');
+    let dayLabel = a.days < 0 ? `${Math.abs(a.days)} day(s) overdue` : (a.days===0 ? 'Due today' : `In ${a.days} day(s)`);
+    return `<div class="alert-item ${cls}">
+      <div><div class="a-title">${escapeHtml(a.title)}</div><div class="a-sub">${a.sub} · ${dayLabel}</div></div>
+      <div class="a-amt">${a.amt}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ================= CHARTS ================= */
+let charts = {};
+function getThemeColors(){
+  const isLight = document.body.classList.contains('light');
+  return {
+    text: isLight ? '#1a1c29' : '#e8eaf0',
+    grid: isLight ? '#e2e4ee' : '#2a2f42',
+    palette: ['#6366f1','#22c55e','#f59e0b','#ef4444','#3b82f6','#a855f7','#06b6d4','#ec4899']
+  };
+}
+function destroyChart(key){ if(charts[key]){ charts[key].destroy(); delete charts[key]; } }
+
+function renderAllCharts(){
+  renderTrendChart();
+  renderCategoryChart();
+  renderCardUsageChart();
+  renderLendChart();
+}
+
+function renderTrendChart(){
+  const colors = getThemeColors();
+  const months = [];
+  const now = new Date();
+  for(let i=5;i>=0;i--){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    months.push(d.toISOString().slice(0,7));
+  }
+  const totals = months.map(m=> DATA.expenses.filter(e=>monthKey(e.date)===m).reduce((s,e)=>s+e.amount,0));
+  const labels = months.map(m=>{
+    const [y,mo] = m.split('-');
+    return new Date(y,mo-1,1).toLocaleDateString('en-IN',{month:'short',year:'2-digit'});
+  });
+
+  destroyChart('trend');
+  charts.trend = new Chart($('chartTrend'), {
+    type:'line',
+    data:{ labels, datasets:[{ label:'Expenses', data: totals, borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,0.15)', tension:0.35, fill:true, pointBackgroundColor:'#6366f1' }] },
+    options:{ responsive:true, plugins:{legend:{display:false}}, scales:{
+      x:{ ticks:{color:colors.text}, grid:{color:colors.grid} },
+      y:{ ticks:{color:colors.text}, grid:{color:colors.grid}, beginAtZero:true }
+    }}
+  });
+}
+
+function renderCategoryChart(){
+  const colors = getThemeColors();
+  const cats = ['Food','Travel','Shopping','Bills','Fuel','Medical','Entertainment','Other'];
+  const data = cats.map(c=> DATA.expenses.filter(e=>e.category===c).reduce((s,e)=>s+e.amount,0));
+  const hasData = data.some(v=>v>0);
+
+  destroyChart('category');
+  charts.category = new Chart($('chartCategory'), {
+    type:'doughnut',
+    data:{ labels: cats, datasets:[{ data: hasData ? data : [1], backgroundColor: hasData ? colors.palette : ['#2a2f42'], borderWidth:0 }] },
+    options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{color:colors.text, boxWidth:12, font:{size:11}} } } }
+  });
+}
+
+function renderCardUsageChart(){
+  const colors = getThemeColors();
+  const data = CARD_NAMES.map(name=> DATA.cards.filter(c=>c.cardName===name).reduce((s,c)=>s+c.amount,0));
+  const hasData = data.some(v=>v>0);
+
+  destroyChart('cards');
+  charts.cards = new Chart($('chartCards'), {
+    type:'bar',
+    data:{ labels: CARD_NAMES, datasets:[{ label:'Outstanding', data: hasData?data:[0,0,0,0,0], backgroundColor:'#a855f7', borderRadius:6 }] },
+    options:{ responsive:true, plugins:{legend:{display:false}}, scales:{
+      x:{ ticks:{color:colors.text}, grid:{display:false} },
+      y:{ ticks:{color:colors.text}, grid:{color:colors.grid}, beginAtZero:true }
+    }}
+  });
+}
+
+function renderLendChart(){
+  const colors = getThemeColors();
+  let lent = 0, received = 0;
+  DATA.lends.forEach(l=>{
+    lent += l.amount;
+    if(l.status === 'Received') received += l.amount;
+    else if(l.status === 'Partially Received') received += l.amount * 0.5;
+  });
+  const pending = Math.max(lent - received, 0);
+
+  destroyChart('lend');
+  charts.lend = new Chart($('chartLend'), {
+    type:'bar',
+    data:{ labels:['Total Lent','Received (est.)','Pending'], datasets:[{ data:[lent, received, pending], backgroundColor:['#3b82f6','#22c55e','#f59e0b'], borderRadius:6 }] },
+    options:{ responsive:true, plugins:{legend:{display:false}}, scales:{
+      x:{ ticks:{color:colors.text}, grid:{display:false} },
+      y:{ ticks:{color:colors.text}, grid:{color:colors.grid}, beginAtZero:true }
+    }}
+  });
+}
+
+/* ================= REPORTS ================= */
+let currentReportPeriod = 'month';
+document.querySelectorAll('.btn-period').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.btn-period').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentReportPeriod = btn.dataset.period;
+    const isCustom = currentReportPeriod === 'custom';
+    $('customRangeRow').style.display = isCustom ? 'grid' : 'none';
+    $('customRangeBtn').style.display = isCustom ? 'flex' : 'none';
+    if(!isCustom) renderReport();
+  });
+});
+$('applyCustomRange').addEventListener('click', renderReport);
+
+function getReportRange(){
+  const now = new Date();
+  let from, to;
+  if(currentReportPeriod === 'today'){
+    from = to = todayStr();
+  } else if(currentReportPeriod === 'week'){
+    const d = new Date(now);
+    const day = d.getDay();
+    const diffToMonday = (day === 0 ? -6 : 1 - day);
+    const monday = new Date(d); monday.setDate(d.getDate()+diffToMonday);
+    from = monday.toISOString().slice(0,10);
+    to = todayStr();
+  } else if(currentReportPeriod === 'month'){
+    from = now.toISOString().slice(0,7) + '-01';
+    to = todayStr();
+  } else { // custom
+    from = $('repFrom').value || todayStr();
+    to = $('repTo').value || todayStr();
+  }
+  return {from, to};
+}
+
+function renderReport(){
+  const {from, to} = getReportRange();
+  const list = DATA.expenses.filter(e=> e.date >= from && e.date <= to)
+    .sort((a,b)=> b.date.localeCompare(a.date));
+
+  const total = list.reduce((s,e)=>s+e.amount,0);
+  $('repTotalExp').textContent = fmt(total);
+  $('repTxnCount').textContent = list.length;
+
+  const days = Math.max(1, (new Date(to) - new Date(from))/(1000*60*60*24) + 1);
+  $('repAvgDay').textContent = fmt(total/days);
+
+  const catTotals = {};
+  list.forEach(e=> catTotals[e.category] = (catTotals[e.category]||0) + e.amount);
+  let topCat = '—', topVal = 0;
+  Object.entries(catTotals).forEach(([c,v])=>{ if(v>topVal){topVal=v; topCat=c;} });
+  $('repTopCat').textContent = topCat;
+
+  const tbody = $('repTableBody');
+  if(list.length===0){
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No expenses in this period</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(e=>`
+    <tr>
+      <td>${e.date}</td>
+      <td>${fmt(e.amount)}</td>
+      <td>${e.category}</td>
+      <td>${e.method}</td>
+      <td>${e.notes ? escapeHtml(e.notes) : '—'}</td>
+    </tr>`).join('');
+}
+
+/* ================= SETTINGS: EXPORT / IMPORT / RESET ================= */
+$('btnExport').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fintrack-backup-${todayStr()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Backup exported');
+});
+
+$('btnImport').addEventListener('click', ()=> $('importFile').click());
+$('importFile').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = evt=>{
+    try{
+      const parsed = JSON.parse(evt.target.result);
+      askConfirm('Import Backup','This will replace your current data with the backup file. Continue?', ()=>{
+        DATA = Object.assign(JSON.parse(JSON.stringify(defaultData)), parsed);
+        saveData();
+        renderAll();
+        showToast('Backup imported successfully');
+        if(isCloudConnected()) cloudPushAll();
+      });
+    }catch(err){
+      showToast('Invalid backup file', true);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+$('btnReset').addEventListener('click', ()=>{
+  askConfirm('Reset All Data','This will permanently delete ALL your data. This action cannot be undone.', ()=>{
+    DATA = JSON.parse(JSON.stringify(defaultData));
+    saveData();
+    renderAll();
+    showToast('All data has been reset');
+    if(isCloudConnected()) cloudPushAll();
+  });
+});
+
+/* ================= SETTINGS: CLOUD SYNC ================= */
+$('btnSaveApiUrl').addEventListener('click', ()=>{
+  const url = $('apiUrl').value.trim();
+  const secret = $('apiSecret').value.trim();
+  localStorage.setItem(API_URL_KEY, url);
+  localStorage.setItem(API_SECRET_KEY, secret);
+  if(url){
+    showToast('Connecting to Google Sheet...');
+    initCloudSync();
+  } else {
+    setSyncStatus('Offline (Local Storage only)');
+    showToast('Cloud sync disconnected');
+  }
+});
+$('btnSyncNow').addEventListener('click', cloudPullAll);
+$('btnPushAll').addEventListener('click', ()=>{
+  askConfirm('Push to Google Sheet','This will overwrite all data currently in your Google Sheet with your local data. Continue?', cloudPushAll);
+});
+$('btnPullAll').addEventListener('click', ()=>{
+  askConfirm('Pull from Google Sheet','This will overwrite your local data with data from your Google Sheet. Continue?', cloudPullAll);
+});
+
+/* ================= INIT ================= */
+function populateCategoryFilter(){
+  const cats = ['Food','Travel','Shopping','Bills','Fuel','Medical','Entertainment','Other'];
+  $('expFilterCategory').innerHTML = '<option value="">All Categories</option>' + cats.map(c=>`<option>${c}</option>`).join('');
+}
+
+function setDefaultDates(){
+  $('expDate').value = todayStr();
+  $('lendDateGiven').value = todayStr();
+  $('cardTxnDate').value = todayStr();
+  $('investDate').value = todayStr();
+  $('cycleDate').value = todayStr();
+}
+
+function renderAll(){
+  populateCategoryFilter();
+  renderExpenses();
+  renderLends();
+  renderCards();
+  renderCommitments();
+  renderInvestments();
+  renderCycles();
+  renderDashboard();
+  renderReport();
+}
+
+setDefaultDates();
+renderAll();
+initCloudSync();
+let dataChanged = false;
+
+const originalSaveData = saveData;
+
+saveData = function() {
+  originalSaveData();
+  dataChanged = true;
+};
+
+setInterval(() => {
+  if (isCloudConnected() && dataChanged) {
+    cloudPushAll();
+    dataChanged = false;
+  }
+}, 30000);
+</script>
+<script>
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  const installBtn = document.createElement('button');
+
+  installBtn.innerHTML = '📲 Install App';
+  installBtn.className = 'btn btn-primary';
+
+  installBtn.style.position = 'fixed';
+  installBtn.style.bottom = '20px';
+  installBtn.style.right = '20px';
+  installBtn.style.zIndex = '9999';
+
+  document.body.appendChild(installBtn);
+
+  installBtn.addEventListener('click', async () => {
+    deferredPrompt.prompt();
+
+    const choice = await deferredPrompt.userChoice;
+
+    if (choice.outcome === 'accepted') {
+      installBtn.remove();
+    }
+  });
+});
+</script>
+  <script>
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  const installBtn = document.createElement('button');
+
+  installBtn.innerHTML = '📲 Install App';
+  installBtn.className = 'btn btn-primary';
+
+  installBtn.style.position = 'fixed';
+  installBtn.style.bottom = '20px';
+  installBtn.style.right = '20px';
+  installBtn.style.zIndex = '9999';
+
+  document.body.appendChild(installBtn);
+
+  installBtn.addEventListener('click', async () => {
+    deferredPrompt.prompt();
+
+    const choice = await deferredPrompt.userChoice;
+
+    if (choice.outcome === 'accepted') {
+      installBtn.remove();
+    }
+  });
+});
+</script>
+  <script>
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  const installBtn = document.createElement('button');
+
+  installBtn.innerHTML = '📲 Install App';
+  installBtn.className = 'btn btn-primary';
+
+  installBtn.style.position = 'fixed';
+  installBtn.style.bottom = '20px';
+  installBtn.style.right = '20px';
+  installBtn.style.zIndex = '9999';
+
+  document.body.appendChild(installBtn);
+
+  installBtn.addEventListener('click', async () => {
+    deferredPrompt.prompt();
+
+    const choice = await deferredPrompt.userChoice;
+
+    if (choice.outcome === 'accepted') {
+      installBtn.remove();
+    }
+  });
+});
+</script>
+  <script>
+
+const APP_PIN = "2580";
+   
+function unlockApp(){
+
+  const pin =
+  document.getElementById('pinInput').value;
+
+  if(pin === APP_PIN){
+
+    document.getElementById('pinLock')
+      .style.display='none';
+
+  }else{
+
+    alert("Wrong PIN");
+
+  }
+}
+
+</script>
 </body>
 </html>
