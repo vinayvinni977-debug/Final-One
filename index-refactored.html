@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#6366f1">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinTrack — Personal Finance Tracker</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    /* ===== ROOT VARIABLES ===== */
+    :root {
+      --bg: #0f1117;
+      --bg2: #161922;
+      --card: #1c2030;
+      --card2: #22273a;
+      --border: #2a2f42;
+      --text: #e8eaf0;
+      --muted: #8b91a8;
+      --accent: #6366f1;
+      --accent2: #818cf8;
+      --green: #22c55e;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --blue: #3b82f6;
+      --purple: #a855f7;
+      --cyan: #06b6d4;
+      --radius: 14px;
+      --shadow: 0 4px 20px rgba(0,0,0,0.35);
+    }
+
+    .light {
+      --bg: #f4f5f9;
+      --bg2: #ffffff;
+      --card: #ffffff;
+      --card2: #f0f1f6;
+      --border: #e2e4ee;
+      --text: #1a1c29;
+      --muted: #6b7185;
+      --shadow: 0 4px 20px rgba(30,30,60,0.08);
+    }
+
+    /* ===== GLOBAL STYLES ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.25s, color 0.25s;
+      min-height: 100vh;
+    }
+
+    a { color: inherit; }
+    button { cursor: pointer; border: none; font-family: inherit; }
+    input, select, textarea { font-family: inherit; }
+
+    /* ===== PIN LOCK SCREEN ===== */
+    #pinLock {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      z-index: 99999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    #pinLock.hidden {
+      display: none;
+    }
+
+    .pin-title {
+      color: var(--text);
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .pin-input {
+      width: 200px;
+      padding: 12px;
+      text-align: center;
+      font-size: 24px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card2);
+      color: var(--text);
+      letter-spacing: 4px;
+    }
+
+    .pin-button {
+      padding: 10px 20px;
+      border-radius: 10px;
+      background: var(--accent);
+      color: white;
+      font-weight: 600;
+      transition: background 0.15s;
+    }
+
+    .pin-button:hover {
+      background: var(--accent2);
+    }
+
+    .pin-error {
+      color: var(--red);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    /* ===== LAYOUT ===== */
+    .app {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 230px;
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 14px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      z-index: 200;
+      transition: transform 0.25s;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px 24px;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .brand .logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #fff;
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14.5px;
+      font-weight: 500;
+      transition: 0.15s;
+    }
+
+    .nav-item .icon {
+      width: 20px;
+      text-align: center;
+      font-size: 17px;
+      aria-hidden: true;
+    }
+
+    .nav-item:hover {
+      background: var(--card2);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .sidebar-footer {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 10px;
+      text-align: center;
+    }
+
+    .main {
+      flex: 1;
+      margin-left: 230px;
+      padding: 22px 26px 60px;
+      max-width: 100%;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 22px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .topbar h1 {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .topbar .sub {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 2px;
+    }
+
+    .menu-toggle {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 18px;
+      color: var(--text);
+    }
+
+    .page {
+      display: none;
+      animation: fade 0.25s ease;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    @keyframes fade {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ===== CARDS ===== */
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card .label {
+      font-size: 12.5px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card .value {
+      font-size: 26px;
+      font-weight: 800;
+      margin-top: 8px;
+    }
+
+    .card .icon-badge {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      opacity: 0.9;
+      aria-hidden: true;
+    }
+
+    .card .sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .card.green .icon-badge { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+    .card.red .icon-badge { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+    .card.yellow .icon-badge { background: rgba(245, 158, 11, 0.15); color: var(--yellow); }
+    .card.blue .icon-badge { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
+    .card.purple .icon-badge { background: rgba(168, 85, 247, 0.15); color: var(--purple); }
+    .card.cyan .icon-badge { background: rgba(6, 182, 212, 0.15); color: var(--cyan); }
+    .card.net.pos .value { color: var(--green); }
+    .card.net.neg .value { color: var(--red); }
+
+    /* ===== SECTIONS ===== */
+    .section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .chart-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .chart-box h3 {
+      font-size: 14px;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .chart-box canvas {
+      max-height: 260px;
+    }
+
+    /* ===== FORMS ===== */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .form-grid.full {
+      grid-template-columns: 1fr;
+    }
+
+    label {
+      font-size: 12.5px;
+      color: var(--muted);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: 0.15s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .field {
+      margin-bottom: 4px;
+    }
+
+    .form-actions {
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border-radius: 9px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: 0.15s;
+      cursor: pointer;
+    }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent2); }
+    .btn-secondary { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--border); }
+    .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--red); border: 1px solid rgba(239, 68, 68, 0.3); }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
+    .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 7px; }
+
+    /* ===== TABLES ===== */
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      min-width: 620px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    tbody tr:hover {
+      background: var(--card2);
+    }
+
+    .badge {
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 700;
+      display: inline-block;
+    }
+
+    .badge.pending { background: rgba(245, 158, 11, 0.15); color: var(--yellow); }
+    .badge.partial { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
+    .badge.received, .badge.paid { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+    .badge.unpaid, .badge.due { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+
+    .row-actions { display: flex; gap: 6px; }
+    .empty-row td { text-align: center; color: var(--muted); padding: 24px; }
+
+    /* ===== ALERTS ===== */
+    .alert-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: var(--card2);
+      margin-bottom: 8px;
+      border-left: 4px solid var(--yellow);
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .alert-item.urgent { border-left-color: var(--red); }
+    .alert-item.ok { border-left-color: var(--green); }
+    .alert-item .a-title { font-weight: 600; font-size: 14px; }
+    .alert-item .a-sub { font-size: 12px; color: var(--muted); }
+    .alert-item .a-amt { font-weight: 700; font-size: 14px; }
+
+    /* ===== FILTERS ===== */
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .filter-bar select, .filter-bar input {
+      width: auto;
+      min-width: 130px;
+    }
+
+    /* ===== SETTINGS ===== */
+    .settings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px;
+      background: var(--card2);
+      border-radius: 10px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .setting-row .desc {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .sync-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .api-input-section {
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .switch {
+      position: relative;
+      width: 46px;
+      height: 26px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: var(--border);
+      border-radius: 26px;
+      transition: 0.2s;
+    }
+
+    .slider:before {
+      content: "";
+      position: absolute;
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+
+    input:checked + .slider {
+      background: var(--accent);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--green);
+      border-radius: 10px;
+      padding: 12px 18px;
+      box-shadow: var(--shadow);
+      font-size: 14px;
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: 0.3s;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.error {
+      border-left-color: var(--red);
+    }
+
+    /* ===== REPORT SUMMARY ===== */
+    .report-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .report-summary .mini {
+      background: var(--card2);
+      padding: 14px;
+      border-radius: 10px;
+    }
+
+    .report-summary .mini .label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .report-summary .mini .val {
+      font-size: 18px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    /* ===== MODAL/OVERLAY ===== */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+    }
+
+    .overlay.show {
+      display: flex;
+    }
+
+    .confirm-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .confirm-box p {
+      margin: 10px 0 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .confirm-box .form-actions {
+      justify-content: center;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main {
+        margin-left: 0;
+        padding: 16px;
+      }
+
+      .menu-toggle {
+        display: block;
+      }
+
+      table {
+        min-width: 560px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .card .value {
+        font-size: 21px;
+      }
+
+      .topbar h1 {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- PIN LOCK -->
+  <div id="pinLock">
+    <h2 class="pin-title">🔒 FinTrack</h2>
+    <input
+      type="password"
+      id="pinInput"
+      class="pin-input"
+      maxlength="4"
+      placeholder="Enter PIN"
+      aria-label="Enter 4-digit PIN"
+    >
+    <button class="pin-button" id="pinSubmitBtn">Unlock</button>
+    <div class="pin-error" id="pinError"></div>
+  </div>
+
+  <!-- APP -->
+  <div class="app">
+    <!-- SIDEBAR -->
+    <nav class="sidebar" id="sidebar">
+      <div class="brand"><div class="logo">₹</div> FinTrack</div>
+      <ul class="nav-list">
+        <li class="nav-item active" data-page="dashboard"><span class="icon" aria-hidden="true">📊</span> Dashboard</li>
+        <li class="nav-item" data-page="expenses"><span class="icon" aria-hidden="true">🧾</span> Expenses</li>
+        <li class="nav-item" data-page="lend"><span class="icon" aria-hidden="true">🤝</span> Money To Collect</li>
+        <li class="nav-item" data-page="cards"><span class="icon" aria-hidden="true">💳</span> Credit Cards</li>
+        <li class="nav-item" data-page="cccycle"><span class="icon" aria-hidden="true">🔄</span> CC Pay-Withdraw Cycle</li>
+        <li class="nav-item" data-page="commitments"><span class="icon" aria-hidden="true">📅</span> Monthly Commitments</li>
+        <li class="nav-item" data-page="investments"><span class="icon" aria-hidden="true">📈</span> Investments</li>
+        <li class="nav-item" data-page="reports"><span class="icon" aria-hidden="true">📑</span> Reports</li>
+        <li class="nav-item" data-page="settings"><span class="icon" aria-hidden="true">⚙️</span> Settings</li>
+      </ul>
+      <div class="sidebar-footer">FinTrack v1.0 · Local Storage</div>
+    </nav>
+
+    <!-- MAIN -->
+    <main class="main">
+      <!-- DASHBOARD -->
+      <section class="page active" id="page-dashboard">
+        <div class="topbar">
+          <button class="menu-toggle" data-toggle="menu" aria-label="Toggle menu">☰</button>
+          <div><h1>Dashboard</h1><div class="sub" id="todayDate"></div></div>
+        </div>
+
+        <div class="grid-cards">
+          <div class="card red">
+            <div class="icon-badge" aria-hidden="true">🧾</div>
+            <div class="label">Total Expenses (This Month)</div>
+            <div class="value" id="dTotalExpenses">₹0</div>
+            <div class="sub">All categories combined</div>
+          </div>
+          <div class="card yellow">
+            <div class="icon-badge" aria-hidden="true">🤝</div>
+            <div class="label">Money To Collect</div>
+            <div class="value" id="dMoneyToCollect">₹0</div>
+            <div class="sub">Pending from borrowers</div>
+          </div>
+          <div class="card purple">
+            <div class="icon-badge" aria-hidden="true">💳</div>
+            <div class="label">Credit Card Outstanding</div>
+            <div class="value" id="dCardOutstanding">₹0</div>
+            <div class="sub">Across all cards</div>
+          </div>
+          <div class="card blue">
+            <div class="icon-badge" aria-hidden="true">📅</div>
+            <div class="label">Monthly Commitments</div>
+            <div class="value" id="dCommitments">₹0</div>
+            <div class="sub">EMIs, chit funds, etc.</div>
+          </div>
+          <div class="card yellow">
+            <div class="icon-badge" aria-hidden="true">🔄</div>
+            <div class="label">CC Cycle Charges (This Month)</div>
+            <div class="value" id="dCycleCharges">₹0</div>
+            <div class="sub">Pay & withdraw cost</div>
+          </div>
+          <div class="card cyan">
+            <div class="icon-badge" aria-hidden="true">📈</div>
+            <div class="label">Investments</div>
+            <div class="value" id="dInvestments">₹0</div>
+            <div class="sub">Total invested</div>
+          </div>
+          <div class="card net" id="netCard">
+            <div class="icon-badge" aria-hidden="true">⚖️</div>
+            <div class="label">Net Position</div>
+            <div class="value" id="dNetPosition">₹0</div>
+            <div class="sub">Collect + Investments − CC − Commitments − Cycle Charges</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title"><span aria-hidden="true">🔔</span> Upcoming Alerts &amp; Reminders</div>
+          <div id="alertsList"></div>
+        </div>
+
+        <div class="charts-grid">
+          <div class="chart-box"><h3>Monthly Expense Trend</h3><canvas id="chartTrend"></canvas></div>
+          <div class="chart-box"><h3>Expense Category Breakdown</h3><canvas id="chartCategory"></canvas></div>
+          <div class="chart-box"><h3>Credit Card Usage Breakdown</h3><canvas id="chartCards"></canvas></div>
+          <div class="chart-box"><h3>Money Lent vs Received</h3><canvas id="chartLend"></canvas></div>
+        </div>
+      </section>
+
+      <!-- EXPENSES -->
+      <section class="page" id="page-expenses">
+        <div class="topbar">
+          <button class="menu-toggle" data-toggle="menu" aria-label="Toggle menu">☰</button>
+          <div><h1>Expenses</h1><div class="sub">Track your daily spending</div></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Add Expense</div>
+          <form id="formExpense">
+            <input type="hidden" id="expId">
+            <div class="form-grid">
+              <div class="field"><label for="expDate">Date</label><input type="date" id="expDate" required></div>
+              <div class="field"><label for="expAmount">Amount (₹)</label><input type="number" id="expAmount" step="0.01" min="0" required></div>
+              <div class="field"><label for="expCategory">Category</label>
+                <select id="expCategory" required></select>
+              </div>
+              <div class="field"><label for="expMethod">Payment Method</label>
+                <select id="expMethod" required></select>
+              </div>
+            </div>
+            <div class="form-grid full" style="margin-top:12px;">
+              <div class="field"><label for="expNotes">Notes</label><textarea id="expNotes" placeholder="Optional notes"></textarea></div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">💾 Save Expense</button>
+              <button type="button" class="btn btn-secondary" id="expReset">Clear</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="section">
+          <div class="section-title">
+            <span>All Expenses</span>
+            <div class="filter-bar">
+              <select id="expFilterCategory"><option value="">All Categories</option></select>
+              <select id="expFilterMethod"><option value="">All Methods</option></select>
+              <input type="month" id="expFilterMonth">
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Amount</th><th>Category</th><th>Method</th><th>Notes</th><th>Actions</th></tr></thead>
+              <tbody id="expTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- MONEY TO COLLECT -->
+      <section class="page" id="page-lend">
+        <div class="topbar">
+          <button class="menu-toggle" data-toggle="menu" aria-label="Toggle menu">☰</button>
+          <div><h1>Money To Collect</h1><div class="sub">Track money lent to others</div></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Add Entry</div>
+          <form id="formLend">
+            <input type="hidden" id="lendId">
+            <div class="form-grid">
+              <div class="field"><label for="lendName">Person Name</label><input type="text" id="lendName" required></div>
+              <div class="field"><label for="lendAmount">Amount (₹)</label><input type="number" id="lendAmount" step="0.01" min="0" required></div>
+              <div class="field"><label for="lendDateGiven">Date Given</label><input type="date" id="lendDateGiven" required></div>
+              <div class="field"><label for="lendDueDate">Due Date</label><input type="date" id="lendDueDate"></div>
+              <div class="field"><label for="lendStatus">Status</label>
+                <select id="lendStatus"></select>
+              </div>
+            </div>
+            <div class="form-grid full" style="margin-top:12px;">
+              <div class="field"><label for="lendNotes">Notes</label><textarea id="lendNotes"></textarea></div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">💾 Save Entry</button>
+              <button type="button" class="btn btn-secondary" id="lendReset">Clear</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="section">
+          <div class="section-title">All Entries</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Person</th><th>Amount</th><th>Given</th><th>Due</th><th>Status</th><th>Notes</th><th>Actions</th></tr></thead>
+              <tbody id="lendTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- CREDIT CARDS -->
+      <section class="page" id="page-cards">
+        <div class="topbar">
+          <button class="menu-toggle" data-toggle="menu" aria-label="Toggle menu">☰</button>
+          <div><h1>Credit Cards</h1><div class="sub">Track card spending &amp; outstanding</div></div>
+        </div>
+
+        <div class="grid-cards" id="cardSummaryGrid"></div>
+
+        <div class="section">
+          <div class="section-title">Add Transaction</div>
+          <form id="formCard">
+            <input type="hidden" id="cardId">
+            <div class="form-grid">
+              <div class="field"><label for="cardName">Card Name</label>
+                <select id="cardName" required></select>
+              </div>
+              <div class="field"><label for="cardAmount">Transaction Amount (₹)</label><input type="number" id="cardAmount" step="0.01" min="0" required></div>
+              <div class="field"><label for="cardTxnDate">Transaction Date</label><input type="date" id="cardTxnDate" required></div>
+              <div class="field"><label for="cardDueDate">Due Date</label><input type="date" id="cardDueDate" required></div>
+            </div>
+            <div class="form-grid full" style="margin-top:12px;">
+              <div class="field"><label for="cardNotes">Notes</label><textarea id="cardNotes"></textarea></div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">💾 Save Transaction</button>
+              <button type="button" class="btn btn-secondary" id="cardReset">Clear</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="section">
+          <div class="section-title">
+            <span>All Card Transactions</span>
+            <select id="cardFilter"></select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Card</th><th>Amount</th><th>Txn Date</th><th>Due Date</th><th>Notes</th><th>Actions</th></tr></thead>
+              <tbody id="cardTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- CC PAY-WITHDRAW CYCLE -->
+      <section class="page" id="page-cccycle">
+        <div class="topbar">
+          <button class="menu-toggle" data-toggle="menu" aria-label="Toggle menu">☰</button>
+          <div><h1>CC Pay-Withdraw Cycle</h1><div class="sub">Track monthly bill payment, withdrawal & charges</div></div>
+        </div>
+
+        <div class="grid-cards">
+          <div class="card yellow">
+            <div class="icon-badge" aria-hidden="true">🔄</div>
+            <div class="label">Total Charges (This Month)</div>
+            <div class="value" id="cycleMonthTotal">₹0</div>
+            <div class="sub">Withdrawal/processing charges</div>
+          </div>
+          <div class="card purple">
+            <div class="icon-badge" aria-hidden="true">💸</div>
+            <div class="label">Total Charges (All Time)</div>
+            <div class="value" id="cycleAllTotal">₹0</div>
+            <div class="sub">Lifetime cost of cycling</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Add Cycle Entry</div>
+          <form id="formCycle">
+            <input type="hidden" id="cycleId">
+            <div class="form-grid">
+              <div class="field"><label for="cycleCardName">Card Name</label>
+                <select id="cycleCardName" required></select>
+              </div>
+              <div class="field"><label for="cycleDate">Date</label><input type="date" id="cycleDate" required></div>
+              <div class="field"><label for="cycleBillPaid">Bill Amount Paid (₹)</label><input type="number" id="cycleBillPaid" step="0.01" min="0" required></div>
+              <div class="field"><label for="cycleWithdrawn">Amount Withdrawn Again (₹)</label><input type="number" id="cycleWithdrawn" step="0.01" min="0" required></div>
+              <div class="field"><label for="cycleCharges">Charges Incurred (₹)</label><input type="number" id="cycleCharges" step="0.01" min="0" required></div>
+            </div>
+            <div class="form-grid full" style="margin-top:12px;">
+              <div class="field"><label for="cycleNotes">Notes</label><textarea id="cycleNotes" placeholder="Optional notes"></textarea></div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">💾 Save Cycle Entry</button>
+              <button type="button" class="btn btn-secondary" id="cycleReset">Clear</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="section">
+          <div class="section-title">
+            <span>Cycle History</span>
+            <select id="cycleFilter"></select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Card</th><th>Bill Paid</th><th>Withdrawn</th><th>Charges</th><th>Notes</th><th>Actions</th></tr></thead>
+              <tbody id="cycleTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- MONTHLY COMMITMENTS -->
+      <section class="page" id="page-commitments">
+        <div class="topbar">
+          <button class="menu-toggle" data-toggle="menu" aria-label="Toggle menu">☰</button>
+          <div><h1>Monthly Commitments</h1><div class="sub">Recurring EMIs &amp; chit funds</div></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Add Commitment</div>
+          <form id="formCommit">
+            <input type="hidden" id="commitId">
+            <div class="form-grid">
+              <div class="field"><label for="commitName">Name</label>
+                <input type="text" id="commitName" list="commitSuggestions" placeholder="e.g. Bike EMI" required>
+                <datalist id="commitSuggestions"></datalist>
+              </div>
+              <div class="field"><label for="commitAmount">Amount (₹)</label><input type="number" id="commitAmount" step="0.01" min="0" required></div>
+              <div class="field"><label for="commitDueDate">Due Date</label><input type="date" id="commitDueDate" required></div>
+              <div class="field"><label for="commitStatus">Status</label>
+                <select id="commitStatus"></select>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">💾 Save Commitment</button>
+              <button type="button" class="btn btn-secondary" id="commitReset">Clear</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="section">
+          <div class="section-title">All Commitments</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="commitTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- INVESTMENTS -->
+      <section class="page" id="page-investments">
+        <div class="topbar">
+          <button class="menu-toggle" data-toggle="menu" aria-label="Toggle menu">☰</button>
+          <div><h1>Investments</h1><div class="sub">Track your investment portfolio</div></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Add Investment</div>
+          <form id="formInvest">
+            <input type="hidden" id="investId">
+            <div class="form-grid">
+              <div class="field"><label for="investName">Investment Name</label><input type="text" id="investName" placeholder="e.g. Mutual Fund SIP" required></div>
+              <div class="field"><label for="investAmount">Amount (₹)</label><input type="number" id="investAmount" step="0.01" min="0" required></div>
+              <div class="field"><label for="investDate">Date</label><input type="date" id="investDate" required></div>
+            </div>
+            <div class="form-grid full" style="margin-top:12px;">
+              <div class="field"><label for="investNotes">Notes</label><textarea id="investNotes"></textarea></div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">💾 Save Investment</button>
+              <button type="button" class="btn btn-secondary" id="investReset">Clear</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="section">
+          <div class="section-title">All Investments</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Amount</th><th>Date</th><th>Notes</th><th>Actions</th></tr></thead>
+              <tbody id="investTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- REPORTS -->
+      <section class="page" id="page-reports">
+        <div class="topbar">
+          <button class="menu-toggle" data-toggle="menu" aria-label="Toggle menu">☰</button>
+          <div><h1>Reports</h1><div class="sub">Analyze spending across time periods</div></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Select Period</div>
+          <div class="filter-bar">
+            <button class="btn btn-secondary btn-period" data-period="today">Today</button>
+            <button class="btn btn-secondary btn-period" data-period="week">This Week</button>
+            <button class="btn btn-secondary btn-period active" data-period="month">This Month</button>
+            <button class="btn btn-secondary btn-period" data-period="custom">Custom Range</button>
+          </div>
+          <div class="form-grid" id="customRangeRow" style="display:none;max-width:400px;">
+            <div class="field"><label for="repFrom">From</label><input type="date" id="repFrom"></div>
+            <div class="field"><label for="repTo">To</label><input type="date" id="repTo"></div>
+          </div>
+          <div class="form-actions" id="customRangeBtn" style="display:none;">
+            <button class="btn btn-primary" id="applyCustomRange">Apply</button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Summary</div>
+          <div class="report-summary">
+            <div class="mini"><div class="label">Total Expenses</div><div class="val" id="repTotalExp">₹0</div></div>
+            <div class="mini"><div class="label">Transactions</div><div class="val" id="repTxnCount">0</div></div>
+            <div class="mini"><div class="label">Avg / Day</div><div class="val" id="repAvgDay">₹0</div></div>
+            <div class="mini"><div class="label">Top Category</div><div class="val" id="repTopCat">—</div></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Expenses in Period</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Amount</th><th>Category</th><th>Method</th><th>Notes</th></tr></thead>
+              <tbody id="repTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="page" id="page-settings">
+        <div class="topbar">
+          <button class="menu-toggle" data-toggle="menu" aria-label="Toggle menu">☰</button>
+          <div><h1>Settings</h1><div class="sub">Manage app preferences &amp; data</div></div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Preferences</div>
+          <div class="settings-list">
+            <div class="setting-row">
+              <div><div>Dark Mode</div><div class="desc">Toggle between dark and light theme</div></div>
+              <label class="switch"><input type="checkbox" id="darkModeToggle" checked><span class="slider"></span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">☁️ Cloud Sync (Google Sheets)</div>
+          <div class="settings-list">
+            <div class="setting-row">
+              <div class="api-input-section">
+                <div>Apps Script Web App URL</div>
+                <div class="desc">Paste the URL from your deployed Google Apps Script. Leave blank to use offline (Local Storage only) mode.</div>
+                <input type="text" id="apiUrl" placeholder="https://script.google.com/macros/s/XXXX/exec" style="margin-top:8px;">
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="api-input-section">
+                <div>Shared Secret (optional)</div>
+                <div class="desc">Must match the SHARED_SECRET set in your Apps Script, if any.</div>
+                <input type="text" id="apiSecret" placeholder="Optional secret key" style="margin-top:8px;">
+              </div>
+            </div>
+            <div class="setting-row">
+              <div>
+                <div>Connection Status</div>
+                <div class="desc" id="syncStatus">Offline (Local Storage only)</div>
+              </div>
+              <div class="sync-buttons">
+                <button class="btn btn-secondary" id="btnSaveApiUrl">💾 Save & Connect</button>
+                <button class="btn btn-primary" id="btnSyncNow">🔄 Sync Now</button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div>
+                <div>Push Local Data to Sheet</div>
+                <div class="desc">Uploads your current local data to Google Sheets, overwriting what's there.</div>
+              </div>
+              <button class="btn btn-secondary" id="btnPushAll">⬆ Push to Sheet</button>
+            </div>
+            <div class="setting-row">
+              <div>
+                <div>Pull Data from Sheet</div>
+                <div class="desc">Downloads data from Google Sheets, overwriting local data.</div>
+              </div>
+              <button class="btn btn-secondary" id="btnPullAll">⬇ Pull from Sheet</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Data Management</div>
+          <div class="settings-list">
+            <div class="setting-row">
+              <div><div>Export Backup</div><div class="desc">Download all data as a JSON file</div></div>
+              <button class="btn btn-primary" id="btnExport">⬇ Export</button>
+            </div>
+            <div class="setting-row">
+              <div><div>Import Backup</div><div class="desc">Restore data from a JSON backup file</div></div>
+              <div>
+                <input type="file" id="importFile" accept="application/json" style="display:none;">
+                <button class="btn btn-secondary" id="btnImport">⬆ Import</button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div><div>Reset Data</div><div class="desc">Permanently delete all stored data</div></div>
+              <button class="btn btn-danger" id="btnReset">🗑 Reset All</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toast"></div>
+
+  <!-- CONFIRMATION MODAL -->
+  <div class="overlay" id="confirmOverlay">
+    <div class="confirm-box">
+      <h3 id="confirmTitle">Are you sure?</h3>
+      <p id="confirmMsg">This action cannot be undone.</p>
+      <div class="form-actions">
+        <button class="btn btn-secondary" id="confirmCancel">Cancel</button>
+        <button class="btn btn-danger" id="confirmOk">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===== CONSTANTS ===== */
+    const DB_KEY = 'fintrack_data_v1';
+    const THEME_KEY = 'fintrack_theme';
+    const PIN_KEY = 'fintrack_pin';
+    const API_URL_KEY = 'fintrack_api_url';
+    const API_SECRET_KEY = 'fintrack_api_secret';
+
+    const CARD_NAMES = ['ICICI', 'HDFC', 'HSBC', 'OneCard', 'YES Bank'];
+    const EXPENSE_CATEGORIES = ['Food', 'Travel', 'Shopping', 'Bills', 'Fuel', 'Medical', 'Entertainment', 'Other'];
+    const PAYMENT_METHODS = ['Cash', 'UPI', 'Credit Card'];
+    const LEND_STATUS_OPTIONS = ['Pending', 'Partially Received', 'Received'];
+    const COMMITMENT_STATUS_OPTIONS = ['Unpaid', 'Paid'];
+    const COMMITMENT_SUGGESTIONS = ['Chit Fund', 'Mobile EMI', 'Bike EMI', 'Other EMI'];
+
+    const defaultData = { expenses: [], lends: [], cards: [], commitments: [], investments: [], cycles: [] };
+
+    /* ===== HELPERS ===== */
+    const $ = id => document.getElementById(id);
+    const fmt = n => '₹' + Number(n||0).toLocaleString('en-IN', {maximumFractionDigits:2});
+    const todayStr = () => new Date().toISOString().slice(0,10);
+    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+    /* ===== STORAGE ===== */
+    function loadData(){
+      try {
+        const raw = localStorage.getItem(DB_KEY);
+        if(!raw) return JSON.parse(JSON.stringify(defaultData));
+        const parsed = JSON.parse(raw);
+        return Object.assign(JSON.parse(JSON.stringify(defaultData)), parsed);
+      } catch(e) {
+        console.error('Failed to load data:', e);
+        return JSON.parse(JSON.stringify(defaultData));
+      }
+    }
+
+    function saveData(){
+      try {
+        localStorage.setItem(DB_KEY, JSON.stringify(DATA));
+      } catch(e) {
+        console.error('Failed to save data:', e);
+        showToast('Error saving data - storage may be full', true);
+      }
+    }
+
+    let DATA = loadData();
+
+    /* ===== PIN LOCK ===== */
+    function initPinLock() {
+      const pinInput = $('pinInput');
+      const pinSubmitBtn = $('pinSubmitBtn');
+      const pinError = $('pinError');
+
+      function checkPin() {
+        const enteredPin = pinInput.value.trim();
+        if(!enteredPin || enteredPin.length !== 4) {
+          pinError.textContent = 'PIN must be 4 digits';
+          return;
+        }
+
+        const storedPin = localStorage.getItem(PIN_KEY);
+        if(!storedPin) {
+          localStorage.setItem(PIN_KEY, enteredPin);
+          unlockAppUI();
+        } else if(enteredPin === storedPin) {
+          unlockAppUI();
+        } else {
+          pinError.textContent = 'Incorrect PIN';
+          pinInput.value = '';
+          pinInput.focus();
+        }
+      }
+
+      pinSubmitBtn.addEventListener('click', checkPin);
+      pinInput.addEventListener('keypress', e => {
+        if(e.key === 'Enter') checkPin();
+      });
+
+      // Auto-focus PIN input
+      pinInput.focus();
+    }
+
+    function unlockAppUI() {
+      $('pinLock').classList.add('hidden');
+      initCloudSync();
+      renderAll();
+    }
+
+    /* ===== TOAST ===== */
+    function showToast(msg, isError=false){
+      const t = $('toast');
+      t.textContent = msg;
+      t.classList.toggle('error', isError);
+      t.classList.add('show');
+      setTimeout(()=>t.classList.remove('show'), 2200);
+    }
+
+    /* ===== CONFIRMATION MODAL ===== */
+    let confirmCallback = null;
+    function askConfirm(title, msg, cb){
+      $('confirmTitle').textContent = title;
+      $('confirmMsg').textContent = msg;
+      confirmCallback = cb;
+      $('confirmOverlay').classList.add('show');
+    }
+
+    $('confirmCancel').onclick = ()=>{ 
+      $('confirmOverlay').classList.remove('show'); 
+      confirmCallback=null; 
+    };
+    $('confirmOk').onclick = ()=>{
+      if(confirmCallback) confirmCallback();
+      $('confirmOverlay').classList.remove('show');
+      confirmCallback=null;
+    };
+
+    /* ===== UTILITY FUNCTIONS ===== */
+    function monthKey(dateStr){ return (dateStr||'').slice(0,7); }
+    function currentMonthKey(){ return new Date().toISOString().slice(0,7); }
+
+    function populateSelects() {
+      // Expense categories
+      const expCategorySelect = $('expCategory');
+      EXPENSE_CATEGORIES.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.textContent = cat;
+        expCategorySelect.appendChild(opt);
+      });
+
+      // Payment methods
+      const expMethodSelect = $('expMethod');
+      PAYMENT_METHODS.forEach(method => {
+        const opt = document.createElement('option');
+        opt.textContent = method;
+        expMethodSelect.appendChild(opt);
+      });
+
+      // Filter methods
+      const filterMethodSelect = $('expFilterMethod');
+      PAYMENT_METHODS.forEach(method => {
+        const opt = document.createElement('option');
+        opt.textContent = method;
+        filterMethodSelect.appendChild(opt);
+      });
+
+      // Card names
+      [  $('cardName'), $('cycleCardName') ].forEach(sel => {
+        CARD_NAMES.forEach(card => {
+          const opt = document.createElement('option');
+          opt.textContent = card;
+          sel.appendChild(opt);
+        });
+      });
+
+      // Card filters
+      [ $('cardFilter'), $('cycleFilter') ].forEach(sel => {
+        const allOpt = document.createElement('option');
+        allOpt.value = '';
+        allOpt.textContent = 'All Cards';
+        sel.appendChild(allOpt);
+
+        CARD_NAMES.forEach(card => {
+          const opt = document.createElement('option');
+          opt.textContent = card;
+          sel.appendChild(opt);
+        });
+      });
+
+      // Lend status
+      const lendStatusSelect = $('lendStatus');
+      LEND_STATUS_OPTIONS.forEach(status => {
+        const opt = document.createElement('option');
+        opt.textContent = status;
+        lendStatusSelect.appendChild(opt);
+      });
+
+      // Commitment status
+      const commitStatusSelect = $('commitStatus');
+      COMMITMENT_STATUS_OPTIONS.forEach(status => {
+        const opt = document.createElement('option');
+        opt.textContent = status;
+        commitStatusSelect.appendChild(opt);
+      });
+
+      // Commitment suggestions
+      const commitDatalist = $('commitSuggestions');
+      COMMITMENT_SUGGESTIONS.forEach(suggestion => {
+        const opt = document.createElement('option');
+        opt.textContent = suggestion;
+        commitDatalist.appendChild(opt);
+      });
+    }
+
+    /* ===== NAVIGATION ===== */
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item=>{
+      item.addEventListener('click', ()=>{
+        navItems.forEach(n=>n.classList.remove('active'));
+        item.classList.add('active');
+        document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+        $('page-'+item.dataset.page).classList.add('active');
+        $('sidebar').classList.remove('open');
+        if(item.dataset.page === 'dashboard') renderDashboard();
+        if(item.dataset.page === 'reports') renderReport();
+        if(item.dataset.page === 'cccycle') renderCycles();
+      });
+    });
+
+    // Menu toggle buttons
+    document.querySelectorAll('[data-toggle="menu"]').forEach(btn => {
+      btn.addEventListener('click', () => $('sidebar').classList.toggle('open'));
+    });
+
+    /* ===== THEME ===== */
+    function applyTheme(theme){
+      document.body.classList.toggle('light', theme === 'light');
+      $('darkModeToggle').checked = theme !== 'light';
+    }
+
+    $('darkModeToggle').addEventListener('change', e=>{
+      const theme = e.target.checked ? 'dark' : 'light';
+      localStorage.setItem(THEME_KEY, theme);
+      applyTheme(theme);
+      renderAllCharts();
+    });
+
+    applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+
+    /* ===== CLOUD SYNC (Google Sheets via Apps Script) ===== */
+    function getApiUrl(){ return (localStorage.getItem(API_URL_KEY) || '').trim(); }
+    function getApiSecret(){ return (localStorage.getItem(API_SECRET_KEY) || '').trim(); }
+    function isCloudConnected(){ return !!getApiUrl(); }
+
+    function setSyncStatus(text){
+      const el = $('syncStatus');
+      if(el) el.textContent = text;
+    }
+
+    async function apiRequest(action, payload){
+      const url = getApiUrl();
+      if(!url) return null;
+      try{
+        if(action === 'getAll'){
+          const sep = url.includes('?') ? '&' : '?';
+          const secretParam = getApiSecret() ? `&secret=${encodeURIComponent(getApiSecret())}` : '';
+          const res = await fetch(`${url}${sep}action=getAll${secretParam}`);
+          const json = await res.json();
+          if(!json.ok) throw new Error(json.error || 'Unknown API error');
+          return json.data;
+        } else {
+          const body = Object.assign({ action, secret: getApiSecret() }, payload);
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(body)
+          });
+          const json = await res.json();
+          if(!json.ok) throw new Error(json.error || 'Unknown API error');
+          return json;
+        }
+      }catch(err){
+        console.error('Cloud sync error:', err);
+        setSyncStatus('⚠️ Sync error: ' + err.message);
+        return null;
+      }
+    }
+
+    function cloudSave(table, row){
+      if(!isCloudConnected()) return;
+      apiRequest('save', { table, row });
+    }
+
+    function cloudDelete(table, id){
+      if(!isCloudConnected()) return;
+      apiRequest('delete', { table, id });
+    }
+
+    async function cloudPushAll(){
+      if(!isCloudConnected()){ showToast('Connect a Google Sheet URL first', true); return; }
+      setSyncStatus('⬆ Pushing to Google Sheet...');
+      const result = await apiRequest('replaceAll', { data: DATA });
+      if(result){
+        setSyncStatus('✅ Connected · Last pushed ' + new Date().toLocaleTimeString());
+        showToast('Data pushed to Google Sheet');
+      } else {
+        showToast('Push failed — check connection', true);
+      }
+    }
+
+    async function cloudPullAll(){
+      if(!isCloudConnected()){ showToast('Connect a Google Sheet URL first', true); return; }
+      setSyncStatus('⬇ Pulling from Google Sheet...');
+      const data = await apiRequest('getAll');
+      if(data){
+        DATA = Object.assign(JSON.parse(JSON.stringify(defaultData)), data);
+        coerceNumericFields();
+        saveData();
+        renderAll();
+        setSyncStatus('✅ Connected · Last synced ' + new Date().toLocaleTimeString());
+        showToast('Data pulled from Google Sheet');
+      } else {
+        setSyncStatus('⚠️ Pull failed — check URL/secret');
+        showToast('Pull failed — check connection', true);
+      }
+    }
+
+    function coerceNumericFields(){
+      const numFields = {
+        expenses:['amount'], lends:['amount'], cards:['amount'],
+        cycles:['billPaid','withdrawn','charges'], commitments:['amount'], investments:['amount']
+      };
+      Object.keys(numFields).forEach(table=>{
+        (DATA[table]||[]).forEach(row=>{
+          numFields[table].forEach(f=>{ if(row[f] !== undefined) row[f] = Number(row[f]) || 0; });
+        });
+      });
+    }
+
+    async function initCloudSync(){
+      const apiUrl = getApiUrl();
+      const apiSecret = getApiSecret();
+      $('apiUrl').value = apiUrl;
+      $('apiSecret').value = apiSecret;
+
+      if(!apiUrl){
+        setSyncStatus('Offline (Local Storage only)');
+        return;
+      }
+      setSyncStatus('⏳ Connecting...');
+      const data = await apiRequest('getAll');
+      if(data){
+        const hasCloudData = Object.values(data).some(arr => Array.isArray(arr) && arr.length > 0);
+        if(hasCloudData){
+          DATA = Object.assign(JSON.parse(JSON.stringify(defaultData)), data);
+          coerceNumericFields();
+          saveData();
+          renderAll();
+        }
+        setSyncStatus('✅ Connected · Last synced ' + new Date().toLocaleTimeString());
+      } else {
+        setSyncStatus('⚠️ Could not connect — check URL/secret (using Local Storage)');
+      }
+    }
+
+    /* ===== SETTINGS EVENT LISTENERS ===== */
+    $('btnSaveApiUrl').addEventListener('click', ()=>{
+      const url = $('apiUrl').value.trim();
+      const secret = $('apiSecret').value.trim();
+      if(!url){
+        showToast('Enter a valid URL', true);
+        return;
+      }
+      localStorage.setItem(API_URL_KEY, url);
+      localStorage.setItem(API_SECRET_KEY, secret);
+      showToast('Settings saved');
+      initCloudSync();
+    });
+
+    $('btnSyncNow').addEventListener('click', async ()=>{
+      if(!isCloudConnected()){ showToast('Connect a Google Sheet URL first', true); return; }
+      setSyncStatus('⏳ Syncing...');
+      await cloudPullAll();
+    });
+
+    $('btnPushAll').addEventListener('click', cloudPushAll);
+    $('btnPullAll').addEventListener('click', cloudPullAll);
+
+    /* ===== RENDER FUNCTIONS (PLACEHOLDER) ===== */
+    function renderAll() {
+      renderExpenses();
+      renderLends();
+      renderCards();
+      renderCommitments();
+      renderInvestments();
+      renderDashboard();
+    }
+
+    function renderExpenses() {
+      // TODO: Implement
+      console.log('renderExpenses called');
+    }
+
+    function renderLends() {
+      // TODO: Implement
+      console.log('renderLends called');
+    }
+
+    function renderCards() {
+      // TODO: Implement
+      console.log('renderCards called');
+    }
+
+    function renderCommitments() {
+      // TODO: Implement
+      console.log('renderCommitments called');
+    }
+
+    function renderInvestments() {
+      // TODO: Implement
+      console.log('renderInvestments called');
+    }
+
+    function renderDashboard() {
+      // TODO: Implement
+      console.log('renderDashboard called');
+    }
+
+    function renderReport() {
+      // TODO: Implement
+      console.log('renderReport called');
+    }
+
+    function renderCycles() {
+      // TODO: Implement
+      console.log('renderCycles called');
+    }
+
+    function renderAllCharts() {
+      // TODO: Implement
+      console.log('renderAllCharts called');
+    }
+
+    /* ===== INITIALIZATION ===== */
+    document.addEventListener('DOMContentLoaded', ()=> {
+      populateSelects();
+      initPinLock();
+      $('todayDate').textContent = new Date().toLocaleDateString();
+    });
+  </script>
+</body>
+</html>
