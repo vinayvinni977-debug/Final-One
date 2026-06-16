@@ -272,6 +272,14 @@ input:checked + .slider:before{transform:translateX(20px);}
           <div class="sub">Total invested</div>
         </div>
         <div class="card net" id="netCard">
+          <div class="card green"
+onclick="showDashboardDetails('spent')"
+style="cursor:pointer;">
+  <div class="icon-badge">💰</div>
+  <div class="label">Spent By Me</div>
+  <div class="value" id="dSpentByMe">₹0</div>
+  <div class="sub">Withdrawn minus lent amount</div>
+</div>
           <div class="icon-badge">⚖️</div>
           <div class="label">Net Position</div>
           <div class="value" id="dNetPosition">₹0</div>
@@ -1365,10 +1373,21 @@ function calcTotals(){
   const investmentsTotal = DATA.investments.reduce((s,i)=>s+i.amount,0);
 
   const cycleChargesMonth = DATA.cycles.filter(c=>monthKey(c.date)===mk).reduce((s,c)=>s+c.charges,0);
+  const totalWithdrawn =
+DATA.cycles.reduce(
+(s,c)=>s+(Number(c.withdrawn)||0),
+0
+);
+
+const spentByMe =
+Math.max(
+0,
+totalWithdrawn - moneyToCollect
+);
 
   const netPosition = moneyToCollect + investmentsTotal - cardOutstanding - commitmentsTotal - cycleChargesMonth;
 
-  return {totalExpensesMonth, moneyToCollect, cardOutstanding, commitmentsTotal, investmentsTotal, cycleChargesMonth, netPosition};
+  return {totalExpensesMonth, moneyToCollect, cardOutstanding, commitmentsTotal, investmentsTotal, cycleChargesMonth, netPosition,spentByMe};
 }
 
 function renderDashboard(){
@@ -1379,6 +1398,8 @@ function renderDashboard(){
   $('dCommitments').textContent = fmt(t.commitmentsTotal);
   $('dCycleCharges').textContent = fmt(t.cycleChargesMonth);
   $('dInvestments').textContent = fmt(t.investmentsTotal);
+  $('dSpentByMe').textContent =
+fmt(t.spentByMe);
   $('dNetPosition').textContent = fmt(t.netPosition);
   const netCard = $('netCard');
   netCard.classList.remove('pos','neg');
@@ -1761,6 +1782,37 @@ function showDashboardDetails(type){
       </div>`;
    });
  }
+  else if(type==="spent"){
+
+ title="Spent By Me";
+
+ const totalWithdrawn =
+ DATA.cycles.reduce(
+ (s,c)=>s+(Number(c.withdrawn)||0),
+ 0
+ );
+
+ const moneyToCollect =
+ DATA.lends
+ .filter(x=>x.status!=="Received")
+ .reduce((s,x)=>s+(Number(x.amount)||0),0);
+
+ const spentByMe =
+ Math.max(
+ 0,
+ totalWithdrawn - moneyToCollect
+ );
+
+ html = `
+ <div style="padding:10px;">
+ Total Withdrawn: ₹${totalWithdrawn}<br><br>
+
+ Money To Collect: ₹${moneyToCollect}<br><br>
+
+ <b>Spent By Me: ₹${spentByMe}</b>
+ </div>
+ `;
+}
 
  document.getElementById("detailTitle").innerHTML = title;
  document.getElementById("detailContent").innerHTML =
