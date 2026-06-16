@@ -1702,7 +1702,13 @@ function renderAll(){
   renderDashboard();
   renderReport();
 }
+function closeDetails(){
+  document.getElementById("detailModal").style.display="none";
+}
 
+function showDashboardDetails(type){
+  alert(type);
+}
 setDefaultDates();
 renderAll();
 initCloudSync();
@@ -1915,6 +1921,7 @@ function showDashboardDetails(type){
  document.getElementById("detailModal").style.display="block";
 }
 </script>
+  
   <div id="detailModal" style="
 display:none;
 position:fixed;
