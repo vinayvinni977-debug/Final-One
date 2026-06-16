@@ -1366,7 +1366,20 @@ function calcTotals(){
     return s + l.amount; // Pending = full amount
   },0);
 
-  const cardOutstanding = DATA.cards.reduce((s,c)=>s+c.amount,0);
+  const cardTransactions =
+DATA.cards.reduce(
+(s,c)=>s+(Number(c.amount)||0),
+0
+);
+
+const cardWithdrawals =
+DATA.cycles.reduce(
+(s,c)=>s+(Number(c.withdrawn)||0),
+0
+);
+
+const cardOutstanding =
+cardTransactions + cardWithdrawals;
 
   const commitmentsTotal = DATA.commitments.reduce((s,c)=>s+c.amount,0);
 
