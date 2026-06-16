@@ -1706,8 +1706,67 @@ function closeDetails(){
   document.getElementById("detailModal").style.display="none";
 }
 
+function closeDetails(){
+  document.getElementById("detailModal").style.display="none";
+}
+
 function showDashboardDetails(type){
-  alert(type);
+
+ let html="";
+ let title="";
+
+ if(type==="collect"){
+
+   title="Money To Collect";
+
+   DATA.lends.forEach(x=>{
+      if(x.status!=="Received"){
+         html+=`
+         <div style="padding:10px;border-bottom:1px solid #444;">
+         <b>${x.name}</b><br>
+         Amount: ₹${x.amount}<br>
+         Due: ${x.dueDate || "-"}<br>
+         Status: ${x.status}
+         </div>`;
+      }
+   });
+ }
+
+ else if(type==="expenses"){
+
+   title="Expenses";
+
+   DATA.expenses.forEach(x=>{
+      html+=`
+      <div style="padding:10px;border-bottom:1px solid #444;">
+      ₹${x.amount} - ${x.category}<br>
+      ${x.date}
+      </div>`;
+   });
+ }
+
+ else if(type==="cards"){
+
+   title="Credit Card Outstanding";
+
+   CARD_NAMES.forEach(card=>{
+
+      const total = DATA.cards
+      .filter(x=>x.cardName===card)
+      .reduce((a,b)=>a+b.amount,0);
+
+      html+=`
+      <div style="padding:10px;border-bottom:1px solid #444;">
+      ${card}: ₹${total}
+      </div>`;
+   });
+ }
+
+ document.getElementById("detailTitle").innerHTML = title;
+ document.getElementById("detailContent").innerHTML =
+ html || "No records found";
+
+ document.getElementById("detailModal").style.display="block";
 }
 setDefaultDates();
 renderAll();
