@@ -235,37 +235,37 @@ input:checked + .slider:before{transform:translateX(20px);}
       </div>
 
       <div class="grid-cards">
-        <div class="card red">
+        <div class="card red" onclick="showDashboardDetails('expenses')" style="cursor:pointer;">
           <div class="icon-badge">🧾</div>
           <div class="label">Total Expenses (This Month)</div>
           <div class="value" id="dTotalExpenses">₹0</div>
           <div class="sub">All categories combined</div>
         </div>
-        <div class="card yellow">
+        <div class="card yellow" onclick="showDashboardDetails('collect')" style="cursor:pointer;">
           <div class="icon-badge">🤝</div>
           <div class="label">Money To Collect</div>
           <div class="value" id="dMoneyToCollect">₹0</div>
           <div class="sub">Pending from borrowers</div>
         </div>
-        <div class="card purple">
+        <div class="card purple" onclick="showDashboardDetails('cards')" style="cursor:pointer;">
           <div class="icon-badge">💳</div>
           <div class="label">Credit Card Outstanding</div>
           <div class="value" id="dCardOutstanding">₹0</div>
           <div class="sub">Across all cards</div>
         </div>
-        <div class="card blue">
+        <div class="card blue" onclick="showDashboardDetails('commitments')" style="cursor:pointer;">
           <div class="icon-badge">📅</div>
           <div class="label">Monthly Commitments</div>
           <div class="value" id="dCommitments">₹0</div>
           <div class="sub">EMIs, chit funds, etc.</div>
         </div>
-        <div class="card yellow">
+       <div class="card yellow" onclick="showDashboardDetails('cycles')" style="cursor:pointer;">
           <div class="icon-badge">🔄</div>
           <div class="label">CC Cycle Charges (This Month)</div>
           <div class="value" id="dCycleCharges">₹0</div>
           <div class="sub">Pay & withdraw cost</div>
         </div>
-        <div class="card cyan">
+        <div class="card cyan" onclick="showDashboardDetails('investments')" style="cursor:pointer;">
           <div class="icon-badge">📈</div>
           <div class="label">Investments</div>
           <div class="value" id="dInvestments">₹0</div>
@@ -1811,6 +1811,152 @@ window.addEventListener('beforeinstallprompt', (e) => {
     }
   });
 });
+    function closeDetails(){
+  document.getElementById("detailModal").style.display="none";
+}
+
+function showDashboardDetails(type){
+
+ let html="";
+ let title="";
+
+ if(type==="collect"){
+
+   title="Money To Collect";
+
+   DATA.lends.forEach(x=>{
+      if(x.status!=="Received"){
+         html+=`
+         <div style="padding:10px;border-bottom:1px solid #444;">
+         <b>${x.name}</b><br>
+         Amount: ₹${x.amount}<br>
+         Due: ${x.dueDate || "-"}<br>
+         Status: ${x.status}
+         </div>`;
+      }
+   });
+ }
+
+ if(type==="cards"){
+
+   title="Credit Card Outstanding";
+
+   CARD_NAMES.forEach(card=>{
+
+      const total=DATA.cards
+      .filter(x=>x.cardName===card)
+      .reduce((a,b)=>a+b.amount,0);
+
+      html+=`
+      <div style="padding:10px;border-bottom:1px solid #444;">
+      ${card}: ₹${total}
+      </div>`;
+   });
+ }
+
+ if(type==="commitments"){
+
+   title="Monthly Commitments";
+
+   DATA.commitments.forEach(x=>{
+      html+=`
+      <div style="padding:10px;border-bottom:1px solid #444;">
+      ${x.name}<br>
+      Amount: ₹${x.amount}<br>
+      Due: ${x.dueDate}<br>
+      Status: ${x.status}
+      </div>`;
+   });
+ }
+
+ if(type==="investments"){
+
+   title="Investments";
+
+   DATA.investments.forEach(x=>{
+      html+=`
+      <div style="padding:10px;border-bottom:1px solid #444;">
+      ${x.name}<br>
+      Amount: ₹${x.amount}<br>
+      Date: ${x.date}
+      </div>`;
+   });
+ }
+
+ if(type==="expenses"){
+
+   title="Expenses";
+
+   DATA.expenses.forEach(x=>{
+      html+=`
+      <div style="padding:10px;border-bottom:1px solid #444;">
+      ₹${x.amount} - ${x.category}<br>
+      ${x.date}
+      </div>`;
+   });
+ }
+
+ if(type==="cycles"){
+
+   title="CC Cycle Charges";
+
+   DATA.cycles.forEach(x=>{
+      html+=`
+      <div style="padding:10px;border-bottom:1px solid #444;">
+      ${x.cardName}<br>
+      Charges: ₹${x.charges}<br>
+      Date: ${x.date}
+      </div>`;
+   });
+ }
+
+ document.getElementById("detailTitle").innerHTML=title;
+ document.getElementById("detailContent").innerHTML=html || "No records found";
+ document.getElementById("detailModal").style.display="block";
+}
 </script>
+  <div id="detailModal" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.7);
+z-index:999999;
+">
+
+<div style="
+background:#1c2030;
+margin:40px auto;
+padding:20px;
+width:90%;
+max-width:700px;
+border-radius:12px;
+color:white;
+max-height:80vh;
+overflow:auto;
+">
+
+<h2 id="detailTitle">Details</h2>
+
+<div id="detailContent"></div>
+
+<br>
+
+<button
+onclick="closeDetails()"
+style="
+padding:10px 20px;
+border:none;
+border-radius:8px;
+background:#ef4444;
+color:white;
+">
+Close
+</button>
+
+</div>
+</div>
 </body>
 </html>
