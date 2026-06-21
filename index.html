@@ -1460,7 +1460,7 @@ cardOutstanding - moneyToCollect
 
   const netPosition = moneyToCollect + investmentsTotal - cardOutstanding - commitmentsTotal - cycleChargesMonth;
 
-  return {totalExpensesMonth, moneyToCollect, cardOutstanding, commitmentsTotal, investmentsTotal, cycleChargesMonth, netPosition,spentByMe};
+  return {totalExpensesMonth, moneyToCollect, cardOutstanding, commitmentsTotal, investmentsTotal, cycleChargesMonth,spentByMe};
 }
 
 function renderDashboard(){
@@ -1473,10 +1473,7 @@ function renderDashboard(){
   $('dInvestments').textContent = fmt(t.investmentsTotal);
   $('dSpentByMe').textContent =
 fmt(t.spentByMe);
-  $('dNetPosition').textContent = fmt(t.netPosition);
-  const netCard = $('netCard');
-  netCard.classList.remove('pos','neg');
-  netCard.classList.add(t.netPosition >= 0 ? 'pos' : 'neg');
+  
 
   $('todayDate').textContent = new Date().toLocaleDateString('en-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
 
