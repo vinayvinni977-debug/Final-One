@@ -1435,10 +1435,14 @@ function calcTotals(){
   const totalExpensesMonth = DATA.expenses.filter(e=>monthKey(e.date)===mk).reduce((s,e)=>s+e.amount,0);
 
   const moneyToCollect = DATA.lends.reduce((s,l)=>{
-    if(l.status === 'Received') return s;
-    if(l.status === 'Partially Received') return s + (l.amount * 0.5); // estimate remaining
-    return s + l.amount; // Pending = full amount
-  },0);
+
+    const pending =
+      (Number(l.amount) || 0) -
+      (Number(l.received) || 0);
+
+    return s + Math.max(0, pending);
+
+},0);
 
   const cardTransactions =
 DATA.cards.reduce(
