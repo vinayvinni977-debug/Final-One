@@ -1443,7 +1443,12 @@ DATA.cycles.reduce(
 const cardOutstanding =
 cardTransactions + cardWithdrawals;
 
-  const commitmentsTotal = DATA.commitments.reduce((s,c)=>s+c.amount,0);
+ const commitmentsTotal = DATA.commitments
+  .filter(c =>
+    c.status !== 'Paid' &&
+    monthKey(c.dueDate) === mk
+  )
+  .reduce((s,c) => s + (Number(c.amount) || 0), 0);
 
   const investmentsTotal = DATA.investments.reduce((s,i)=>s+i.amount,0);
 
