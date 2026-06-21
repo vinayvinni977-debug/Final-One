@@ -1034,14 +1034,15 @@ formLend.addEventListener('submit', e=>{
   e.preventDefault();
   const id = $('lendId').value || uid();
   const entry = {
-    id,
-    name: $('lendName').value.trim(),
-    amount: parseFloat($('lendAmount').value),
-    dateGiven: $('lendDateGiven').value,
-    dueDate: $('lendDueDate').value,
-    status: $('lendStatus').value,
-    notes: $('lendNotes').value.trim()
-  };
+  id,
+  name: $('lendName').value.trim(),
+  amount: parseFloat($('lendAmount').value),
+  received: parseFloat($('lendReceived').value) || 0,
+  dateGiven: $('lendDateGiven').value,
+  dueDate: $('lendDueDate').value,
+  status: $('lendStatus').value,
+  notes: $('lendNotes').value.trim()
+};
   const idx = DATA.lends.findIndex(x=>x.id===id);
   if(idx>=0) DATA.lends[idx]=entry; else DATA.lends.push(entry);
   saveData();
@@ -1057,7 +1058,7 @@ $('lendReset').addEventListener('click', ()=>{ formLend.reset(); $('lendId').val
 function editLend(id){
   const l = DATA.lends.find(x=>x.id===id);
   if(!l) return;
-  $('lendId').value=l.id; $('lendName').value=l.name; $('lendAmount').value=l.amount;
+  $('lendId').value=l.id; $('lendName').value=l.name; $('lendAmount').value=l.amount;$('lendReceived').value = l.received || 0;
   $('lendDateGiven').value=l.dateGiven; $('lendDueDate').value=l.dueDate||'';
   $('lendStatus').value=l.status; $('lendNotes').value=l.notes||'';
   window.scrollTo({top:0,behavior:'smooth'});
