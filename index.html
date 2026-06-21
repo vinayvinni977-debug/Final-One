@@ -1457,7 +1457,7 @@ DATA.cycles.reduce(
 const spentByMe =
 Math.max(
 0,
-totalWithdrawn - moneyToCollect
+cardOutstanding - moneyToCollect
 );
 
   const netPosition = moneyToCollect + investmentsTotal - cardOutstanding - commitmentsTotal - cycleChargesMonth;
