@@ -1262,7 +1262,8 @@ formCommit.addEventListener('submit', e=>{
     name: $('commitName').value.trim(),
     amount: parseFloat($('commitAmount').value),
     dueDate: $('commitDueDate').value,
-    status: $('commitStatus').value
+    status: $('commitStatus').value,
+    recurring: $('commitRecurring').value
   };
   const idx = DATA.commitments.findIndex(x=>x.id===id);
   if(idx>=0) DATA.commitments[idx]=entry; else DATA.commitments.push(entry);
@@ -1290,6 +1291,41 @@ function deleteCommit(id){
     showToast('Commitment deleted');
   });
 }
+  function markCommitPaid(id){
+
+  const item = DATA.commitments.find(x=>x.id===id);
+
+  if(!item) return;
+
+  item.status = 'Paid';
+
+  if(item.recurring === 'Yes'){
+
+    const nextDate = new Date(item.dueDate);
+
+    nextDate.setMonth(nextDate.getMonth() + 1);
+
+    const yyyy = nextDate.getFullYear();
+    const mm = String(nextDate.getMonth()+1).padStart(2,'0');
+    const dd = String(nextDate.getDate()).padStart(2,'0');
+
+    DATA.commitments.push({
+      id: uid(),
+      name: item.name,
+      amount: item.amount,
+      dueDate: `${yyyy}-${mm}-${dd}`,
+      status: 'Unpaid',
+      recurring: 'Yes'
+    });
+  }
+
+  saveData();
+
+  renderCommitments();
+  renderDashboard();
+
+  showToast('Commitment marked as Paid');
+}
 function renderCommitments(){
   const list = [...DATA.commitments].sort((a,b)=> (a.dueDate||'').localeCompare(b.dueDate||''));
   const tbody = $('commitTableBody');
@@ -1304,9 +1340,23 @@ function renderCommitments(){
       <td>${c.dueDate}</td>
       <td><span class="badge ${statusClass(c.status)}">${c.status}</span></td>
       <td class="row-actions">
-        <button class="btn btn-secondary btn-sm" onclick="editCommit('${c.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteCommit('${c.id}')">🗑</button>
-      </td>
+
+  <button class="btn btn-success btn-sm"
+    onclick="markCommitPaid('${c.id}')">
+    ✓
+  </button>
+
+  <button class="btn btn-secondary btn-sm"
+    onclick="editCommit('${c.id}')">
+    ✏️
+  </button>
+
+  <button class="btn btn-danger btn-sm"
+    onclick="deleteCommit('${c.id}')">
+    🗑
+  </button>
+
+</td>
     </tr>`).join('');
 }
 
