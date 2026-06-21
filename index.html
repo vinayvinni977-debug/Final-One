@@ -1833,16 +1833,23 @@ function showDashboardDetails(type){
    title="Money To Collect";
 
    DATA.lends.forEach(x=>{
-      if(x.status!=="Received"){
-         html+=`
-         <div style="padding:10px;border-bottom:1px solid #444;">
-         <b>${x.name}</b><br>
-         Amount: ₹${x.amount}<br>
-         Due: ${x.dueDate || "-"}<br>
-         Status: ${x.status}
-         </div>`;
-      }
-   });
+
+   const amount = Number(x.amount) || 0;
+   const received = Number(x.received) || 0;
+   const pending = amount - received;
+
+   if(pending > 0){
+
+      html += `
+      <div style="padding:10px;border-bottom:1px solid #444;">
+      <b>${x.name}</b><br>
+      Given: ₹${amount.toLocaleString()}<br>
+      Received: ₹${received.toLocaleString()}<br>
+      Pending: ₹${pending.toLocaleString()}<br>
+      Due: ${x.dueDate || "-"}
+      </div>`;
+   }
+});
  }
 
  else if(type==="expenses"){
