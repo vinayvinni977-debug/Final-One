@@ -271,27 +271,19 @@ input:checked + .slider:before{transform:translateX(20px);}
           <div class="value" id="dInvestments">₹0</div>
           <div class="sub">Total invested</div>
         </div>
-      
+        <div class="card net" id="netCard">
           <div class="card green"
 onclick="showDashboardDetails('spent')"
 style="cursor:pointer;">
   <div class="icon-badge">💰</div>
   <div class="label">Spent By Me</div>
   <div class="value" id="dSpentByMe">₹0</div>
-  <div class="sub">
-Actual amount owed by me
-</div>
-</div>
-
-<div class="card net" id="netCard">
-  <div class="icon-badge">⚖️</div>
-  <div class="label">Net Position</div>
-  <div class="value" id="dNetPosition">₹0</div>
-  <div class="sub">Collect + Investments − CC − Commitments − Cycle Charges</div>
+  <div class="sub">Withdrawn minus lent amount</div>
 </div>
           <div class="icon-badge">⚖️</div>
           <div class="label">Net Position</div>
-          
+          <div class="value" id="dNetPosition">₹0</div>
+          <div class="sub">Collect + Investments − CC − Commitments − Cycle Charges</div>
         </div>
       </div>
 
@@ -1865,24 +1857,15 @@ function showDashboardDetails(type){
       </div>`;
    });
  }
- else if(type==="spent"){
+  else if(type==="spent"){
 
  title="Spent By Me";
 
- const cardTransactions =
- DATA.cards.reduce(
- (s,c)=>s+(Number(c.amount)||0),
- 0
- );
-
- const cardWithdrawals =
+ const totalWithdrawn =
  DATA.cycles.reduce(
  (s,c)=>s+(Number(c.withdrawn)||0),
  0
  );
-
- const cardOutstanding =
- cardTransactions + cardWithdrawals;
 
  const moneyToCollect =
  DATA.lends
@@ -1892,21 +1875,16 @@ function showDashboardDetails(type){
  const spentByMe =
  Math.max(
  0,
- cardOutstanding - moneyToCollect
+ totalWithdrawn - moneyToCollect
  );
 
  html = `
  <div style="padding:10px;">
+ Total Withdrawn: ₹${totalWithdrawn}<br><br>
 
- Credit Card Outstanding:
- ₹${cardOutstanding.toLocaleString()}<br><br>
+ Money To Collect: ₹${moneyToCollect}<br><br>
 
- Money To Collect:
- ₹${moneyToCollect.toLocaleString()}<br><br>
-
- <b>Spent By Me:
- ₹${spentByMe.toLocaleString()}</b>
-
+ <b>Spent By Me: ₹${spentByMe}</b>
  </div>
  `;
 }
@@ -1937,6 +1915,11 @@ setInterval(() => {
 }, 30000);
 </script>
 <script>
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
 
   const installBtn = document.createElement('button');
 
@@ -1962,6 +1945,11 @@ setInterval(() => {
 });
 </script>
   <script>
+let deferredPrompt;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
 
   const installBtn = document.createElement('button');
 
