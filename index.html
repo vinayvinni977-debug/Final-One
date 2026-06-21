@@ -1101,7 +1101,9 @@ function renderLends(){
     <tr>
       <td>${escapeHtml(l.name)}</td>
       <td>${fmt(l.amount)}</td>
-      <td>${l.dateGiven||'—'}</td>
+<td>${fmt(l.received || 0)}</td>
+<td>${fmt((l.amount || 0) - (l.received || 0))}</td>
+<td>${l.dateGiven||'—'}</td>
       <td>${l.dueDate||'—'}</td>
       <td><span class="badge ${statusClass(l.status)}">${l.status}</span></td>
       <td>${l.notes ? escapeHtml(l.notes) : '—'}</td>
