@@ -1456,8 +1456,17 @@ DATA.cycles.reduce(
 0
 );
 
+const totalBillPaid =
+DATA.cycles.reduce(
+(s,c)=>s+(Number(c.billPaid)||0),
+0
+);
+
 const cardOutstanding =
-cardTransactions + cardWithdrawals;
+Math.max(
+0,
+cardTransactions - totalBillPaid + cardWithdrawals
+);
 
  const commitmentsTotal = DATA.commitments
   .filter(c =>
