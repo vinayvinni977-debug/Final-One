@@ -1444,20 +1444,29 @@ function calcTotals(){
 
 },0);
 
-  const cardTransactions =
+  const totalCardSpend =
 DATA.cards.reduce(
 (s,c)=>s+(Number(c.amount)||0),
 0
 );
 
-const cardWithdrawals =
+const totalBillPaid =
+DATA.cycles.reduce(
+(s,c)=>s+(Number(c.billPaid)||0),
+0
+);
+
+const totalWithdrawn =
 DATA.cycles.reduce(
 (s,c)=>s+(Number(c.withdrawn)||0),
 0
 );
 
 const cardOutstanding =
-cardTransactions + cardWithdrawals;
+Math.max(
+0,
+totalCardSpend - totalBillPaid + totalWithdrawn
+);
 
  const commitmentsTotal = DATA.commitments
   .filter(c =>
