@@ -1444,29 +1444,20 @@ function calcTotals(){
 
 },0);
 
-  const totalCardSpend =
+  const cardTransactions =
 DATA.cards.reduce(
 (s,c)=>s+(Number(c.amount)||0),
 0
 );
 
-const totalBillPaid =
-DATA.cycles.reduce(
-(s,c)=>s+(Number(c.billPaid)||0),
-0
-);
-
-const totalWithdrawn =
+const cardWithdrawals =
 DATA.cycles.reduce(
 (s,c)=>s+(Number(c.withdrawn)||0),
 0
 );
 
 const cardOutstanding =
-Math.max(
-0,
-totalCardSpend - totalBillPaid + totalWithdrawn
-);
+cardTransactions + cardWithdrawals;
 
  const commitmentsTotal = DATA.commitments
   .filter(c =>
@@ -1478,6 +1469,11 @@ totalCardSpend - totalBillPaid + totalWithdrawn
   const investmentsTotal = DATA.investments.reduce((s,i)=>s+i.amount,0);
 
   const cycleChargesMonth = DATA.cycles.filter(c=>monthKey(c.date)===mk).reduce((s,c)=>s+c.charges,0);
+  const totalWithdrawn =
+DATA.cycles.reduce(
+(s,c)=>s+(Number(c.withdrawn)||0),
+0
+);
 
 const spentByMe =
 Math.max(
