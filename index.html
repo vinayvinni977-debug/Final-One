@@ -1900,10 +1900,16 @@ function showDashboardDetails(type){
  0
  );
 
- const moneyToCollect =
- DATA.lends
- .filter(x=>x.status!=="Received")
- .reduce((s,x)=>s+(Number(x.amount)||0),0);
+const moneyToCollect =
+DATA.lends.reduce((s,x)=>{
+
+ const pending =
+ (Number(x.amount)||0) -
+ (Number(x.received)||0);
+
+ return s + Math.max(0,pending);
+
+},0);
 
  const spentByMe =
  Math.max(
