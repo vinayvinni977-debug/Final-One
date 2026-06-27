@@ -360,7 +360,18 @@ style="cursor:pointer;">
         <form id="formLend">
           <input type="hidden" id="lendId">
           <div class="form-grid">
-            <div class="field"><label>Person Name</label><input type="text" id="lendName" required></div>
+<div class="field">
+    <label>Person Name</label>
+
+    <input
+        type="text"
+        id="lendName"
+        list="personSuggestions"
+        placeholder="Select or type a new name"
+        required>
+
+    <datalist id="personSuggestions"></datalist>
+</div>
             <div class="field"><label>Amount (₹)</label><input type="number" id="lendAmount" step="0.01" min="0" required></div>
             <div class="field">
   <label>Amount Received (₹)</label>
@@ -1059,6 +1070,7 @@ formLend.addEventListener('submit', e=>{
   if(idx>=0) DATA.lends[idx]=entry; else DATA.lends.push(entry);
   saveData();
   cloudSave('lends', entry);
+  updatePersonSuggestions();
   formLend.reset();
   $('lendId').value='';
   $('lendStatus').value='Pending';
@@ -1078,7 +1090,8 @@ function editLend(id){
 function deleteLend(id){
   askConfirm('Delete Entry','This lending record will be permanently removed.', ()=>{
     DATA.lends = DATA.lends.filter(x=>x.id!==id);
-    saveData(); cloudDelete('lends', id); renderLends(); renderDashboard();
+    saveData(); cloudDelete('lends', id);updatePersonSuggestions();
+ renderLends(); renderDashboard();
     showToast('Entry deleted');
   });
 }
@@ -1804,6 +1817,21 @@ function populateCategoryFilter(){
   const cats = ['Food','Travel','Shopping','Bills','Fuel','Medical','Entertainment','Other'];
   $('expFilterCategory').innerHTML = '<option value="">All Categories</option>' + cats.map(c=>`<option>${c}</option>`).join('');
 }
+  function updatePersonSuggestions() {
+
+  const list = $('personSuggestions');
+
+  const names = [...new Set(
+    DATA.lends
+      .map(x => (x.name || '').trim())
+      .filter(name => name !== '')
+  )].sort();
+
+  list.innerHTML = names
+    .map(name => `<option value="${name}">`)
+    .join('');
+
+}
 
 function setDefaultDates(){
   $('expDate').value = todayStr();
@@ -1815,6 +1843,8 @@ function setDefaultDates(){
 
 function renderAll(){
   populateCategoryFilter();
+  updatePersonSuggestions();
+
   renderExpenses();
   renderLends();
   renderCards();
