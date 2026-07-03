@@ -1105,10 +1105,61 @@ const entry = {
 };
   const idx = DATA.lends.findIndex(x => x.id === id);
 
+const idx = DATA.lends.findIndex(x => x.id === id);
+
 if (idx >= 0) {
+
+    // Update lend record
     DATA.lends[idx] = entry;
+
+    // Update linked Credit Card transaction
+    if (entry.source === "Credit Card") {
+
+        const card = DATA.cards.find(
+            c => c.transactionId === entry.transactionId
+        );
+
+        if (card) {
+
+            card.cardName = entry.cardName;
+            card.amount = entry.totalDue;
+            card.txnDate = entry.dateGiven;
+            card.dueDate = entry.dueDate;
+            card.notes = `Loan to ${entry.name}`;
+
+        }
+
+    }
+
 } else {
+
+    // New lend record
     DATA.lends.push(entry);
+
+    // Create Credit Card transaction automatically
+    if (entry.source === "Credit Card") {
+
+        DATA.cards.push({
+
+            id: uid(),
+
+            transactionId: entry.transactionId,
+
+            cardName: entry.cardName,
+
+            amount: entry.totalDue,
+
+            txnDate: entry.dateGiven,
+
+            dueDate: entry.dueDate,
+
+            notes: `Loan to ${entry.name}`
+
+        });
+
+    }
+
+}
 
     // Automatically create Credit Card transaction
     if (entry.source === "Credit Card") {
