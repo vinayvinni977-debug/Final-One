@@ -1056,15 +1056,52 @@ const formLend = $('formLend');
 formLend.addEventListener('submit', e=>{
   e.preventDefault();
   const id = $('lendId').value || uid();
-  const entry = {
-  id,
-  name: $('lendName').value.trim(),
-  amount: parseFloat($('lendAmount').value),
-  received: parseFloat($('lendReceived').value) || 0,
-  dateGiven: $('lendDateGiven').value,
-  dueDate: $('lendDueDate').value,
-  status: $('lendStatus').value,
-  notes: $('lendNotes').value.trim()
+  const principal = Number($('lendAmount').value) || 0;
+
+const chargeRate = Number($('lendChargeRate').value) || 0;
+
+const chargeAmount = principal * chargeRate / 100;
+
+const totalDue = principal + chargeAmount;
+
+const received = Number($('lendReceived').value) || 0;
+
+const pending = totalDue - received;
+
+const entry = {
+
+    id,
+
+    name: $('lendName').value.trim(),
+
+    principal: principal,
+
+    chargeRate: chargeRate,
+
+    chargeAmount: chargeAmount,
+
+    totalDue: totalDue,
+
+    amount: totalDue,          // Keep for backward compatibility
+
+    received: received,
+
+    pending: pending,
+
+    source: $('lendSource').value,
+
+    cardName: $('lendCard').value,
+
+    transactionId: uid(),
+
+    dateGiven: $('lendDateGiven').value,
+
+    dueDate: $('lendDueDate').value,
+
+    status: $('lendStatus').value,
+
+    notes: $('lendNotes').value.trim()
+
 };
   const idx = DATA.lends.findIndex(x=>x.id===id);
   if(idx>=0) DATA.lends[idx]=entry; else DATA.lends.push(entry);
