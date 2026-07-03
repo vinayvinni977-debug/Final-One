@@ -1038,9 +1038,30 @@ function renderExpenses(){
       <td>${e.method}</td>
       <td>${e.notes ? escapeHtml(e.notes) : '—'}</td>
       <td class="row-actions">
-        <button class="btn btn-secondary btn-sm" onclick="editExpense('${e.id}')">✏️</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteExpense('${e.id}')">🗑</button>
-      </td>
+
+${c.transactionType === "Loan"
+
+? `<span class="badge pending">
+Managed from Money To Collect
+</span>`
+
+: `
+
+<button
+class="btn btn-secondary btn-sm"
+onclick="editCard('${c.id}')">
+✏️
+</button>
+
+<button
+class="btn btn-danger btn-sm"
+onclick="deleteCard('${c.id}')">
+🗑
+</button>
+
+`}
+
+</td>
     </tr>`).join('');
 }
 ['expFilterCategory','expFilterMethod','expFilterMonth'].forEach(id=> $(id).addEventListener('change', renderExpenses));
@@ -1137,30 +1158,7 @@ if (idx >= 0) {
     DATA.lends.push(entry);
 
     // Create Credit Card transaction automatically
-    if (entry.source === "Credit Card") {
-
-        DATA.cards.push({
-
-            id: uid(),
-
-            transactionId: entry.transactionId,
-
-            cardName: entry.cardName,
-
-            amount: entry.totalDue,
-
-            txnDate: entry.dateGiven,
-
-            dueDate: entry.dueDate,
-
-            notes: `Loan to ${entry.name}`
-
-        });
-
-    }
-
-}
-
+    
     // Automatically create Credit Card transaction
     if (entry.source === "Credit Card") {
 
@@ -1313,7 +1311,15 @@ function renderCards(){
       <td>${fmt(c.amount)}</td>
       <td>${c.txnDate}</td>
       <td>${c.dueDate}</td>
-      <td>${c.notes ? escapeHtml(c.notes) : '—'}</td>
+      <td>
+
+${c.notes ? escapeHtml(c.notes) : '—'}
+
+${c.transactionType === "Loan"
+? `<br><span class="badge pending">Loan</span>`
+: ""}
+
+</td>
       <td class="row-actions">
         <button class="btn btn-secondary btn-sm" onclick="editCard('${c.id}')">✏️</button>
         <button class="btn btn-danger btn-sm" onclick="deleteCard('${c.id}')">🗑</button>
