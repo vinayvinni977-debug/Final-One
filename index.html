@@ -1103,10 +1103,40 @@ const entry = {
     notes: $('lendNotes').value.trim()
 
 };
-  const idx = DATA.lends.findIndex(x=>x.id===id);
-  if(idx>=0) DATA.lends[idx]=entry; else DATA.lends.push(entry);
-  saveData();
-  cloudSave('lends', entry);
+  const idx = DATA.lends.findIndex(x => x.id === id);
+
+if (idx >= 0) {
+    DATA.lends[idx] = entry;
+} else {
+    DATA.lends.push(entry);
+
+    // Automatically create Credit Card transaction
+    if (entry.source === "Credit Card") {
+
+        DATA.cards.push({
+
+            id: uid(),
+
+            transactionId: entry.transactionId,
+
+            cardName: entry.cardName,
+
+            amount: entry.totalDue,
+
+            txnDate: entry.dateGiven,
+
+            dueDate: entry.dueDate,
+
+            notes: `Loan to ${entry.name}`
+
+        });
+
+    }
+}
+
+saveData();
+
+cloudSave('lends', entry);
   updatePersonSuggestions();
   formLend.reset();
   $('lendId').value='';
