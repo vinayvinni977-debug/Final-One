@@ -1282,18 +1282,54 @@ function deleteCard(id){
     showToast('Transaction deleted');
   });
 }
-function renderCardSummary(){
-  const grid = $('cardSummaryGrid');
-  const colors = ['blue','purple','cyan','green','yellow'];
-  grid.innerHTML = CARD_NAMES.map((name,i)=>{
-    const total = DATA.cards.filter(c=>c.cardName===name).reduce((s,c)=>s+c.amount,0);
-    return `<div class="card ${colors[i%colors.length]}">
-      <div class="icon-badge">💳</div>
-      <div class="label">${name}</div>
-      <div class="value">${fmt(total)}</div>
-      <div class="sub">Total outstanding</div>
-    </div>`;
-  }).join('');
+function renderCardSummary() {
+
+    const grid = $('cardSummaryGrid');
+
+    const colors = ['blue','purple','cyan','green','yellow'];
+
+    grid.innerHTML = CARD_NAMES.map((name, i) => {
+
+        // Purchases + Loan Transactions
+        const cardTransactions = DATA.cards
+            .filter(c => c.cardName === name)
+            .reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+
+        // Bill Payments
+        const billPaid = DATA.cycles
+            .filter(c => c.cardName === name)
+            .reduce((sum, c) => sum + (Number(c.billPaid) || 0), 0);
+
+        // Amount Withdrawn Again
+        const withdrawn = DATA.cycles
+            .filter(c => c.cardName === name)
+            .reduce((sum, c) => sum + (Number(c.withdrawn) || 0), 0);
+
+        // Processing Charges
+        const charges = DATA.cycles
+            .filter(c => c.cardName === name)
+            .reduce((sum, c) => sum + (Number(c.charges) || 0), 0);
+
+        const outstanding =
+            cardTransactions
+            - billPaid
+            + withdrawn
+            + charges;
+
+        return `
+        <div class="card ${colors[i % colors.length]}">
+
+            <div class="icon-badge">💳</div>
+
+            <div class="label">${name}</div>
+
+            <div class="value">${fmt(Math.max(0, outstanding))}</div>
+
+            <div class="sub">Current Outstanding</div>
+
+        </div>`;
+    }).join('');
+
 }
 function renderCards(){
   renderCardSummary();
