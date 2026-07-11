@@ -385,6 +385,7 @@ style="cursor:pointer;">
 
       <datalist id="personSuggestions"></datalist>
   </div>
+              <div class="field"><label>Phone Number (with country code)</label><input type="tel" id="lendPhone" placeholder="e.g. +919876543210"></div>
               <div class="field"><label>Amount (₹)</label><input type="number" id="lendAmount" step="0.01" min="0" required></div>
               <div class="field">
     <label>Amount Received (₹)</label>
@@ -402,6 +403,7 @@ style="cursor:pointer;">
               </div>
               <div class="field" id="lendChargeField" style="display:none;"><label>Charges Incurred (₹)</label>
                 <input type="number" id="lendChargeIncurred" step="0.01" min="0" placeholder="Charge for this withdrawal">
+                <div class="sub" id="lendChargeSuggestion" style="font-size:11px;margin-top:4px;"></div>
               </div>
               <div class="field"><label>Date Given</label><input type="date" id="lendDateGiven" required></div>
               <div class="field"><label>Due Date</label><input type="date" id="lendDueDate"></div>
@@ -477,6 +479,24 @@ style="cursor:pointer;">
             <div class="form-grid full" style="margin-top:12px;">
               <div class="field"><label>Notes</label><textarea id="cycleNotes" placeholder="Optional notes"></textarea></div>
             </div>
+
+            <div style="display:flex;align-items:center;gap:10px;margin-top:14px;">
+              <label class="switch"><input type="checkbox" id="cycleReWithdrawToggle"><span class="slider"></span></label>
+              <span>I'm withdrawing again to keep funding someone</span>
+            </div>
+
+            <div class="form-grid" id="cycleReWithdrawFields" style="display:none;margin-top:12px;">
+              <div class="field"><label>Person</label>
+                <select id="cycleLendId">
+                  <option value="" disabled selected>— Select Person —</option>
+                </select>
+              </div>
+              <div class="field"><label>Re-withdrawal Charge (₹)</label>
+                <input type="number" id="cycleReWithdrawCharge" step="0.01" min="0" placeholder="Charge for this new withdrawal">
+                <div class="sub" id="cycleChargeSuggestion" style="font-size:11px;margin-top:4px;"></div>
+              </div>
+            </div>
+
             <div class="form-actions">
               <button type="submit" class="btn btn-primary">💾 Save Payment</button>
               <button type="button" class="btn btn-secondary" id="cycleReset">Clear</button>
@@ -494,8 +514,28 @@ style="cursor:pointer;">
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Date</th><th>Card</th><th>Bill Paid</th><th>Notes</th><th>Actions</th></tr></thead>
+              <thead><tr><th>Date</th><th>Card</th><th>Bill Paid</th><th>Re-withdrawal</th><th>Notes</th><th>Actions</th></tr></thead>
               <tbody id="cycleTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">📊 How Much They're Charging — By Card</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Card</th><th>Total Withdrawn</th><th>Total Charges</th><th>Effective Rate</th></tr></thead>
+              <tbody id="cardChargeSummaryBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">📊 Charges Attributed To Each Person</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Person</th><th>Card</th><th>Principal</th><th>Total Charges</th><th>Charges as % of Principal</th></tr></thead>
+              <tbody id="personChargeSummaryBody"></tbody>
             </table>
           </div>
         </div>
@@ -521,6 +561,7 @@ style="cursor:pointer;">
                 <input type="text" id="oweName" list="owePersonSuggestions" placeholder="Select or type a new name" required>
                 <datalist id="owePersonSuggestions"></datalist>
               </div>
+              <div class="field"><label>Phone Number (with country code)</label><input type="tel" id="owePhone" placeholder="e.g. +919876543210"></div>
               <div class="field"><label>Amount (₹)</label><input type="number" id="oweAmount" step="0.01" min="0" required></div>
               <div class="field"><label>Amount Paid (₹)</label><input type="number" id="owePaid" step="0.01" min="0" value="0"></div>
               <div class="field"><label>Date Borrowed</label><input type="date" id="oweDateBorrowed" required></div>
@@ -806,6 +847,41 @@ style="cursor:pointer;">
       </div>
 
       <div class="section">
+        <div class="section-title">💳 Card Cash-Advance Charge Rates</div>
+        <div class="settings-list">
+          <div class="setting-row" style="align-items:flex-start;">
+            <div style="flex:1;min-width:220px;">
+              <div class="desc">Each bank charges a different % for cash withdrawals/advances. Set your card's rate here, and it'll auto-suggest the charge amount whenever you log a withdrawal or re-withdrawal.</div>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div>ICICI</div>
+            <div><input type="number" id="rateICICI" step="0.01" min="0" style="width:90px;" placeholder="%"> %</div>
+          </div>
+          <div class="setting-row">
+            <div>HDFC</div>
+            <div><input type="number" id="rateHDFC" step="0.01" min="0" style="width:90px;" placeholder="%"> %</div>
+          </div>
+          <div class="setting-row">
+            <div>HSBC</div>
+            <div><input type="number" id="rateHSBC" step="0.01" min="0" style="width:90px;" placeholder="%"> %</div>
+          </div>
+          <div class="setting-row">
+            <div>OneCard</div>
+            <div><input type="number" id="rateOneCard" step="0.01" min="0" style="width:90px;" placeholder="%"> %</div>
+          </div>
+          <div class="setting-row">
+            <div>YES Bank</div>
+            <div><input type="number" id="rateYESBank" step="0.01" min="0" style="width:90px;" placeholder="%"> %</div>
+          </div>
+          <div class="setting-row">
+            <div><div>Save Rates</div><div class="desc">Applies to future auto-suggested charges</div></div>
+            <button class="btn btn-primary" id="btnSaveCardRates">💾 Save Rates</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
         <div class="section-title">Data Management</div>
         <div class="settings-list">
           <div class="setting-row">
@@ -843,6 +919,12 @@ style="cursor:pointer;">
   </div>
 </div>
 
+<div class="overlay" id="overdueModal">
+  <div class="confirm-box" style="text-align:left;max-width:380px;">
+    <div id="overdueModalContent"></div>
+  </div>
+</div>
+
 <script>
 /* ================= STORAGE ================= */
 const DB_KEY = 'fintrack_data_v1';
@@ -850,7 +932,7 @@ const THEME_KEY = 'fintrack_theme';
 const API_URL_KEY = 'fintrack_api_url';
 const API_SECRET_KEY = 'fintrack_api_secret';
 
-const defaultData = { expenses: [], lends: [], cards: [], commitments: [], investments: [], cycles: [], owes: [] };
+const defaultData = { expenses: [], lends: [], cards: [], commitments: [], investments: [], cycles: [], owes: [], cardChargeRates: {} };
 
 function loadData(){
   try{
@@ -1149,6 +1231,61 @@ function escapeHtml(str){
   return div.innerHTML;
 }
 
+/** Send a WhatsApp reminder with a full breakdown for a Money-To-Collect or I-Owe entry. */
+function sendWhatsAppReminder(type, id){
+  const record = type === 'lend'
+    ? DATA.lends.find(x=>x.id===id)
+    : DATA.owes.find(x=>x.id===id);
+  if(!record) return;
+
+  const digits = (record.phone||'').replace(/[^0-9]/g,'');
+  if(!digits){
+    showToast('Add a phone number for ' + record.name + ' first', true);
+    if(type === 'lend') editLend(id); else editOwe(id);
+    return;
+  }
+
+  let lines = [];
+  if(type === 'lend'){
+    const principal = Number(record.principal)||0;
+    const history = record.chargeHistory || [];
+    const totalCharges = history.reduce((s,c)=>s+(Number(c.charge)||0),0);
+    const totalDue = Number(record.amount)||0;
+    const received = Number(record.received)||0;
+    const pending = totalDue - received;
+
+    lines.push(`Hi ${record.name}, here's your pending balance breakdown:`);
+    lines.push(`Principal: ${fmt(principal)}`);
+    if(record.source === 'Credit Card' && totalCharges > 0){
+      lines.push(`Charges: ${fmt(totalCharges)} (${history.length} charge${history.length===1?'':'s'} via ${record.cardName})`);
+    }
+    lines.push(`Total Due: ${fmt(totalDue)}`);
+    lines.push(`Received: ${fmt(received)}`);
+    lines.push(`Pending: ${fmt(pending)}`);
+    let dateLine = `Lent on: ${record.dateGiven || '-'}`;
+    if(record.dueDate) dateLine += `, Due: ${record.dueDate}`;
+    lines.push(dateLine);
+    lines.push('Please pay when convenient. Thanks!');
+  } else {
+    const amount = Number(record.amount)||0;
+    const paid = Number(record.paid)||0;
+    const remaining = amount - paid;
+
+    lines.push(`Hi ${record.name}, here's what I owe you:`);
+    lines.push(`Amount: ${fmt(amount)}`);
+    lines.push(`Paid: ${fmt(paid)}`);
+    lines.push(`Remaining: ${fmt(remaining)}`);
+    let dateLine = `Borrowed on: ${record.dateBorrowed || '-'}`;
+    if(record.dueDate) dateLine += `, Due: ${record.dueDate}`;
+    lines.push(dateLine);
+    lines.push("I'll settle this soon. Thanks for your patience!");
+  }
+
+  const message = lines.join('\n');
+  const url = `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+  window.open(url, '_blank');
+}
+
 /* ================= MONEY TO COLLECT ================= */
 const formLend = $('formLend');
 formLend.addEventListener('submit', e=>{
@@ -1182,6 +1319,8 @@ const entry = {
     id,
 
     name: $('lendName').value.trim(),
+
+    phone: $('lendPhone').value.trim(),
 
     principal: principal,
 
@@ -1293,6 +1432,7 @@ saveData();
 
 cloudSave('lends', entry);
   updatePersonSuggestions();
+  populateCycleLendOptions();
   formLend.reset();
   $('lendId').value='';
   $('lendStatus').value='Pending';
@@ -1306,9 +1446,30 @@ function toggleLendCreditFields(){
   const isCC = $('lendSource').value === 'Credit Card';
   $('lendCardField').style.display = isCC ? '' : 'none';
   $('lendChargeField').style.display = isCC ? '' : 'none';
+  updateLendChargeSuggestion();
+}
+
+function updateLendChargeSuggestion(){
+  const hint = $('lendChargeSuggestion');
+  const isCC = $('lendSource').value === 'Credit Card';
+  if(!isCC){ hint.innerHTML = ''; return; }
+  const lendId = $('lendId').value;
+  const l = lendId ? DATA.lends.find(x=>x.id===lendId) : null;
+  const principal = Number($('lendAmount').value) || 0;
+  const rate = l ? getPersonLastChargeRate(l) : null;
+
+  if(rate === null){
+    const personName = (l ? l.name : $('lendName').value.trim()) || 'this person';
+    hint.innerHTML = principal > 0 ? `No charge history yet for ${escapeHtml(personName)} — enter manually` : '';
+    return;
+  }
+  const suggested = (principal * rate / 100);
+  hint.innerHTML = `💡 Suggested: ₹${suggested.toFixed(2)} (based on ${escapeHtml(l.name)}'s last charge rate of ${rate.toFixed(2)}%) — <a href="#" onclick="$('lendChargeIncurred').value='${suggested.toFixed(2)}';return false;" style="color:var(--accent);">Use this</a>`;
 }
 
 $('lendSource').addEventListener('change', toggleLendCreditFields);
+$('lendCard').addEventListener('change', updateLendChargeSuggestion);
+$('lendAmount').addEventListener('input', updateLendChargeSuggestion);
 toggleLendCreditFields();
 
 function switchLendTab(tab){
@@ -1340,6 +1501,145 @@ function recalcLendCharges(l){
       card.notes = `Lent via ${l.cardName} Credit Card: Principal ₹${(l.principal||0).toFixed(2)}, Total Due ₹${l.totalDue.toFixed(2)}, Received ₹${(l.received||0).toFixed(2)} → Remaining Outstanding ₹${Math.max(0,l.pending).toFixed(2)} (payable by ${l.name}).`;
     }
   }
+}
+
+/* ================= OVERDUE DUE-DATE CHECK-IN ================= */
+let overdueQueue = [];
+let overdueCurrentId = null;
+
+/** Scans Credit-Card-sourced lends for passed due dates and walks through them one at a time. */
+function checkOverdueLends(){
+  const today = todayStr();
+  overdueQueue = DATA.lends.filter(l=>
+    l.source === 'Credit Card' &&
+    l.dueDate && l.dueDate < today &&
+    l.status !== 'Received' &&
+    ((Number(l.amount)||0) - (Number(l.received)||0)) > 0.01 &&
+    (!l.overdueSnoozeUntil || l.overdueSnoozeUntil <= today)
+  ).map(l=>l.id);
+  showNextOverdue();
+}
+
+function showNextOverdue(){
+  if(overdueQueue.length === 0){ $('overdueModal').classList.remove('show'); return; }
+  overdueCurrentId = overdueQueue.shift();
+  const l = DATA.lends.find(x=>x.id===overdueCurrentId);
+  if(!l){ showNextOverdue(); return; } // was deleted meanwhile — skip
+  renderOverdueStepAsk(l);
+  $('overdueModal').classList.add('show');
+}
+
+function renderOverdueStepAsk(l){
+  const pending = (Number(l.amount)||0) - (Number(l.received)||0);
+  $('overdueModalContent').innerHTML = `
+    <h3>⏰ Overdue: ${escapeHtml(l.name)}</h3>
+    <p>${fmt(pending)} via ${escapeHtml(l.cardName||'')} was due on ${l.dueDate}.</p>
+    <p><b>Has ${escapeHtml(l.name)} paid this?</b></p>
+    <div class="form-actions" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <button class="btn btn-secondary" onclick="overdueSnooze()">⏳ Snooze</button>
+      <button class="btn btn-danger" onclick="overdueStepUnpaid()">❌ Unpaid</button>
+      <button class="btn btn-primary" onclick="overdueStepPaid()">✅ Paid</button>
+    </div>
+  `;
+}
+
+function overdueSnooze(){
+  const l = DATA.lends.find(x=>x.id===overdueCurrentId);
+  if(l){
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate()+1);
+    l.overdueSnoozeUntil = tomorrow.toISOString().slice(0,10);
+    saveData(); cloudSave('lends', l);
+  }
+  showNextOverdue();
+}
+
+function overdueStepPaid(){
+  const l = DATA.lends.find(x=>x.id===overdueCurrentId);
+  const pending = (Number(l.amount)||0) - (Number(l.received)||0);
+  $('overdueModalContent').innerHTML = `
+    <h3>${escapeHtml(l.name)} paid</h3>
+    <div class="field"><label>How much did they pay? (₹)</label>
+      <input type="number" id="overduePaidAmount" step="0.01" min="0" value="${pending.toFixed(2)}">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="renderOverdueStepAsk(DATA.lends.find(x=>x.id==='${l.id}'))">Back</button>
+      <button class="btn btn-primary" onclick="overdueConfirmPaid()">Continue</button>
+    </div>
+  `;
+}
+
+function overdueConfirmPaid(){
+  const l = DATA.lends.find(x=>x.id===overdueCurrentId);
+  if(!l) { showNextOverdue(); return; }
+  const paidNow = Number($('overduePaidAmount').value) || 0;
+  l.received = (Number(l.received)||0) + paidNow;
+  const remaining = (Number(l.amount)||0) - l.received;
+
+  if(remaining <= 0.01){
+    l.status = 'Received';
+    delete l.overdueSnoozeUntil;
+    recalcLendCharges(l);
+    saveData(); cloudSave('lends', l);
+    renderLends(); renderDashboard(); renderCards();
+    showToast(`${l.name} fully paid — marked as Received`);
+    showNextOverdue();
+  } else {
+    l.status = 'Partially Received';
+    recalcLendCharges(l);
+    saveData(); cloudSave('lends', l);
+    renderLends(); renderDashboard(); renderCards();
+    renderOverdueStepRefinance(l, remaining);
+  }
+}
+
+function overdueStepUnpaid(){
+  const l = DATA.lends.find(x=>x.id===overdueCurrentId);
+  const pending = (Number(l.amount)||0) - (Number(l.received)||0);
+  renderOverdueStepRefinance(l, pending);
+}
+
+function renderOverdueStepRefinance(l, remaining){
+  const rate = getPersonLastChargeRate(l);
+  const suggested = rate !== null ? (remaining * rate / 100) : 0;
+  $('overdueModalContent').innerHTML = `
+    <h3>${fmt(remaining)} still pending for ${escapeHtml(l.name)}</h3>
+    <p class="sub">You'll need to pay this off and re-withdraw. Log the new cycle:</p>
+    <div class="field"><label>New Due Date</label><input type="date" id="overdueNewDueDate"></div>
+    <div class="field"><label>Re-withdrawal Charge (₹)</label>
+      <input type="number" id="overdueNewCharge" step="0.01" min="0" value="${suggested.toFixed(2)}">
+      ${rate !== null ? `<div class="sub" style="font-size:11px;">Suggested: based on ${escapeHtml(l.name)}'s last charge rate of ${rate.toFixed(2)}%</div>` : `<div class="sub" style="font-size:11px;">No charge history yet for ${escapeHtml(l.name)} — enter manually</div>`}
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="overdueSnooze()">Skip for now</button>
+      <button class="btn btn-primary" onclick="overdueConfirmRefinance()">Save</button>
+    </div>
+  `;
+}
+
+function overdueConfirmRefinance(){
+  const l = DATA.lends.find(x=>x.id===overdueCurrentId);
+  if(!l) { showNextOverdue(); return; }
+  const newDue = $('overdueNewDueDate').value;
+  const charge = Number($('overdueNewCharge').value) || 0;
+
+  if(charge > 0){
+    if(!l.chargeHistory) l.chargeHistory = [];
+    l.chargeHistory.push({
+      id: uid(),
+      date: todayStr(),
+      withdrawn: (Number(l.amount)||0) - (Number(l.received)||0),
+      charge,
+      note: 'Re-withdrawal charge after overdue due date'
+    });
+  }
+  if(newDue) l.dueDate = newDue;
+  delete l.overdueSnoozeUntil;
+  recalcLendCharges(l);
+  saveData(); cloudSave('lends', l);
+  renderLends(); renderDashboard(); renderCards();
+  showToast('Updated — new due date set');
+  showNextOverdue();
 }
 
 function viewLendHistory(id){
@@ -1379,7 +1679,7 @@ function viewLendHistory(id){
 function editLend(id){
   const l = DATA.lends.find(x=>x.id===id);
   if(!l) return;
-  $('lendId').value=l.id; $('lendName').value=l.name; $('lendAmount').value=l.principal ?? l.amount;$('lendReceived').value = l.received || 0;
+  $('lendId').value=l.id; $('lendName').value=l.name; $('lendPhone').value=l.phone||''; $('lendAmount').value=l.principal ?? l.amount;$('lendReceived').value = l.received || 0;
   $('lendSource').value = l.source || 'Cash';
   $('lendCard').value = l.cardName || 'ICICI';
   $('lendDateGiven').value=l.dateGiven; $('lendDueDate').value=l.dueDate||'';
@@ -1396,7 +1696,7 @@ function deleteLend(id){
     if(l && l.transactionId){
       DATA.cards = DATA.cards.filter(c=>c.transactionId!==l.transactionId);
     }
-    saveData(); cloudDelete('lends', id);updatePersonSuggestions();
+    saveData(); cloudDelete('lends', id);updatePersonSuggestions();populateCycleLendOptions();
  renderLends(); renderDashboard(); renderCards();
     showToast('Entry deleted');
   });
@@ -1438,6 +1738,7 @@ function renderLends(){
         <button class="btn btn-secondary btn-sm" onclick="editLend('${l.id}')">✏️</button>
         ${isCC ? `<button class="btn btn-secondary btn-sm" onclick="editLend('${l.id}')" title="Add Charge">💳+</button>` : ''}
         <button class="btn btn-secondary btn-sm" onclick="viewLendHistory('${l.id}')" title="View History">📜</button>
+        <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReminder('lend','${l.id}')" title="WhatsApp Reminder">📲</button>
         <button class="btn btn-danger btn-sm" onclick="deleteLend('${l.id}')">🗑</button>
       </td>
     </tr>`;
@@ -1446,6 +1747,36 @@ function renderLends(){
 
 /* ================= CREDIT CARDS ================= */
 const CARD_NAMES = ['ICICI','HDFC','HSBC','OneCard','YES Bank'];
+const CARD_RATE_INPUT_IDS = { 'ICICI':'rateICICI', 'HDFC':'rateHDFC', 'HSBC':'rateHSBC', 'OneCard':'rateOneCard', 'YES Bank':'rateYESBank' };
+
+function getCardChargeRate(cardName){
+  return Number((DATA.cardChargeRates || {})[cardName]) || 0;
+}
+/** Returns this person's effective rate (%) from their most recent charge, or null if they have no charge history yet. */
+function getPersonLastChargeRate(l){
+  if(!l || !l.chargeHistory || l.chargeHistory.length === 0) return null;
+  const sorted = [...l.chargeHistory].sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+  const last = sorted[sorted.length-1];
+  const withdrawn = Number(last.withdrawn)||0;
+  const charge = Number(last.charge)||0;
+  if(withdrawn <= 0) return null;
+  return (charge/withdrawn*100);
+}
+function loadCardRatesUI(){
+  CARD_NAMES.forEach(name=>{
+    const el = $(CARD_RATE_INPUT_IDS[name]);
+    if(el) el.value = (DATA.cardChargeRates && DATA.cardChargeRates[name]) || '';
+  });
+}
+$('btnSaveCardRates').addEventListener('click', ()=>{
+  if(!DATA.cardChargeRates) DATA.cardChargeRates = {};
+  CARD_NAMES.forEach(name=>{
+    const el = $(CARD_RATE_INPUT_IDS[name]);
+    DATA.cardChargeRates[name] = Number(el.value) || 0;
+  });
+  saveData();
+  showToast('Card charge rates saved');
+});
 const formCard = $('formCard');
 formCard.addEventListener('submit', e=>{
   e.preventDefault();
@@ -1567,40 +1898,133 @@ $('cardFilter').addEventListener('change', renderCards);
 
 /* ================= CC BILL PAYMENTS (merged into Money To Collect) ================= */
 const formCycle = $('formCycle');
+
+function toggleCycleReWithdrawFields(){
+  const on = $('cycleReWithdrawToggle').checked;
+  $('cycleReWithdrawFields').style.display = on ? '' : 'none';
+  if(on) populateCycleLendOptions();
+  updateCycleChargeSuggestion();
+}
+$('cycleReWithdrawToggle').addEventListener('change', toggleCycleReWithdrawFields);
+
+function updateCycleChargeSuggestion(){
+  const hint = $('cycleChargeSuggestion');
+  if(!$('cycleReWithdrawToggle').checked){ hint.innerHTML = ''; return; }
+  const lendId = $('cycleLendId').value;
+  const l = lendId ? DATA.lends.find(x=>x.id===lendId) : null;
+  const amount = Number($('cycleBillPaid').value) || 0;
+  const rate = l ? getPersonLastChargeRate(l) : null;
+
+  if(rate === null){
+    hint.innerHTML = l ? `No charge history yet for ${escapeHtml(l.name)} — enter manually` : '';
+    return;
+  }
+  const suggested = (amount * rate / 100);
+  hint.innerHTML = `💡 Suggested: ₹${suggested.toFixed(2)} (based on ${escapeHtml(l.name)}'s last charge rate of ${rate.toFixed(2)}%) — <a href="#" onclick="$('cycleReWithdrawCharge').value='${suggested.toFixed(2)}';return false;" style="color:var(--accent);">Use this</a>`;
+}
+$('cycleCardName').addEventListener('change', updateCycleChargeSuggestion);
+$('cycleBillPaid').addEventListener('input', updateCycleChargeSuggestion);
+$('cycleLendId').addEventListener('change', updateCycleChargeSuggestion);
+
+function populateCycleLendOptions(){
+  const sel = $('cycleLendId');
+  const current = sel.value;
+  const ccLends = DATA.lends.filter(l=>l.source==='Credit Card');
+  sel.innerHTML = '<option value="" disabled>— Select Person —</option>' +
+    ccLends.map(l=>`<option value="${l.id}">${escapeHtml(l.name)} (₹${((l.pending!=null?l.pending:(l.amount||0)-(l.received||0))).toFixed(0)} pending)</option>`).join('');
+  if([...sel.options].some(o=>o.value===current && current!=='')) sel.value = current;
+}
+
+/** Remove any chargeHistory entry tagged with this cycle id from every lend (used before re-adding on edit/delete). */
+function unlinkCycleFromLends(cycleEntryId){
+  DATA.lends.forEach(l=>{
+    if(l.chargeHistory && l.chargeHistory.some(c=>c.cycleId===cycleEntryId)){
+      l.chargeHistory = l.chargeHistory.filter(c=>c.cycleId!==cycleEntryId);
+      recalcLendCharges(l);
+      cloudSave('lends', l);
+    }
+  });
+}
+
 formCycle.addEventListener('submit', e=>{
   e.preventDefault();
   const id = $('cycleId').value || uid();
+  const reWithdraw = $('cycleReWithdrawToggle').checked;
+  const lendId = reWithdraw ? $('cycleLendId').value : '';
+  const reWithdrawCharge = reWithdraw ? (Number($('cycleReWithdrawCharge').value) || 0) : 0;
+
+  if(reWithdraw && !lendId){ showToast('Please select a person for the re-withdrawal', true); return; }
+
   const entry = {
     id,
     cardName: $('cycleCardName').value,
     date: $('cycleDate').value,
     billPaid: parseFloat($('cycleBillPaid').value) || 0,
-    notes: $('cycleNotes').value.trim()
+    notes: $('cycleNotes').value.trim(),
+    lendId: lendId || null,
+    reWithdrawCharge: reWithdrawCharge
   };
   const idx = DATA.cycles.findIndex(x=>x.id===id);
   if(idx>=0) DATA.cycles[idx]=entry; else DATA.cycles.push(entry);
   saveData();
   cloudSave('cycles', entry);
 
+  // Clear any stale link from a previous save of this same entry, then
+  // re-add the re-withdrawal charge to whichever person is now selected.
+  unlinkCycleFromLends(id);
+  if(lendId && reWithdrawCharge > 0){
+    const l = DATA.lends.find(x=>x.id===lendId);
+    if(l){
+      if(!l.chargeHistory) l.chargeHistory = [];
+      l.chargeHistory.push({
+        id: uid(),
+        cycleId: id,
+        date: entry.date,
+        withdrawn: entry.billPaid,
+        charge: reWithdrawCharge,
+        note: `Re-withdrawal charge after paying ${entry.cardName} bill`
+      });
+      recalcLendCharges(l);
+      cloudSave('lends', l);
+    }
+  }
+  saveData();
+
   formCycle.reset();
   $('cycleId').value='';
   $('cycleDate').value = todayStr();
-  renderCycles(); renderDashboard();
+  $('cycleReWithdrawToggle').checked = false;
+  toggleCycleReWithdrawFields();
+  renderCycles(); renderDashboard(); renderLends(); renderCards();
   showToast('Bill payment saved');
 });
-$('cycleReset').addEventListener('click', ()=>{ formCycle.reset(); $('cycleId').value=''; $('cycleDate').value = todayStr(); });
+$('cycleReset').addEventListener('click', ()=>{
+  formCycle.reset(); $('cycleId').value=''; $('cycleDate').value = todayStr();
+  $('cycleReWithdrawToggle').checked = false;
+  toggleCycleReWithdrawFields();
+});
 
 function editCycle(id){
   const c = DATA.cycles.find(x=>x.id===id);
   if(!c) return;
   $('cycleId').value=c.id; $('cycleCardName').value=c.cardName; $('cycleDate').value=c.date;
   $('cycleBillPaid').value=c.billPaid; $('cycleNotes').value=c.notes||'';
+  if(c.lendId){
+    $('cycleReWithdrawToggle').checked = true;
+    toggleCycleReWithdrawFields();
+    $('cycleLendId').value = c.lendId;
+    $('cycleReWithdrawCharge').value = c.reWithdrawCharge || 0;
+  } else {
+    $('cycleReWithdrawToggle').checked = false;
+    toggleCycleReWithdrawFields();
+  }
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function deleteCycle(id){
   askConfirm('Delete Payment Entry','This bill payment record will be permanently removed.', ()=>{
     DATA.cycles = DATA.cycles.filter(x=>x.id!==id);
-    saveData(); cloudDelete('cycles', id); renderCycles(); renderDashboard();
+    unlinkCycleFromLends(id);
+    saveData(); cloudDelete('cycles', id); renderCycles(); renderDashboard(); renderLends(); renderCards();
     showToast('Payment entry deleted');
   });
 }
@@ -1615,24 +2039,91 @@ function renderCycles(){
   $('cycleMonthTotal').textContent = fmt(monthTotal);
   $('cycleAllTotal').textContent = fmt(allTotal);
 
+  renderChargeSummary();
+
   const tbody = $('cycleTableBody');
   if(list.length===0){
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No payment entries found</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No payment entries found</td></tr>';
     return;
   }
-  tbody.innerHTML = list.map(c=>`
+  tbody.innerHTML = list.map(c=>{
+    const person = c.lendId ? DATA.lends.find(l=>l.id===c.lendId) : null;
+    const reWithdrawCell = person
+      ? `${escapeHtml(person.name)}<br><span class="sub" style="font-size:11px;">₹${(Number(c.reWithdrawCharge)||0).toFixed(2)} charge</span>`
+      : '—';
+    return `
     <tr>
       <td>${c.date}</td>
       <td>${c.cardName}</td>
       <td>${fmt(c.billPaid)}</td>
+      <td>${reWithdrawCell}</td>
       <td>${c.notes ? escapeHtml(c.notes) : '—'}</td>
       <td class="row-actions">
         <button class="btn btn-secondary btn-sm" onclick="editCycle('${c.id}')">✏️</button>
         <button class="btn btn-danger btn-sm" onclick="deleteCycle('${c.id}')">🗑</button>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 $('cycleFilter').addEventListener('change', renderCycles);
+
+/** Shows how much each card / each person's borrowing has actually cost in charges. */
+function renderChargeSummary(){
+  const byCard = {};   // cardName -> {withdrawn, charges}
+  const byPerson = []; // rows for the person table
+
+  DATA.lends.forEach(l=>{
+    if(l.source !== 'Credit Card') return;
+    const card = l.cardName || 'Unknown';
+    const history = l.chargeHistory || [];
+    if(!byCard[card]) byCard[card] = {withdrawn:0, charges:0};
+
+    let personCharges = 0;
+    history.forEach(c=>{
+      byCard[card].withdrawn += Number(c.withdrawn)||0;
+      byCard[card].charges += Number(c.charge)||0;
+      personCharges += Number(c.charge)||0;
+    });
+
+    if(personCharges > 0 || history.length > 0){
+      const principal = Number(l.principal)||0;
+      const pct = principal > 0 ? (personCharges/principal*100) : 0;
+      byPerson.push({ name:l.name, card, principal, charges:personCharges, pct });
+    }
+  });
+
+  const cardBody = $('cardChargeSummaryBody');
+  const cardRows = Object.keys(byCard);
+  if(cardRows.length === 0){
+    cardBody.innerHTML = '<tr class="empty-row"><td colspan="4">No charges logged yet</td></tr>';
+  } else {
+    cardBody.innerHTML = cardRows.map(card=>{
+      const d = byCard[card];
+      const rate = d.withdrawn > 0 ? (d.charges/d.withdrawn*100) : 0;
+      return `<tr>
+        <td>${card}</td>
+        <td>${fmt(d.withdrawn)}</td>
+        <td>${fmt(d.charges)}</td>
+        <td>${rate.toFixed(2)}%</td>
+      </tr>`;
+    }).join('');
+  }
+
+  const personBody = $('personChargeSummaryBody');
+  if(byPerson.length === 0){
+    personBody.innerHTML = '<tr class="empty-row"><td colspan="5">No charges logged yet</td></tr>';
+  } else {
+    personBody.innerHTML = byPerson
+      .sort((a,b)=>b.charges-a.charges)
+      .map(p=>`<tr>
+        <td>${escapeHtml(p.name)}</td>
+        <td>${p.card}</td>
+        <td>${fmt(p.principal)}</td>
+        <td>${fmt(p.charges)}</td>
+        <td>${p.pct.toFixed(2)}%</td>
+      </tr>`).join('');
+  }
+}
 
 /* ================= I OWE (money you owe to others) ================= */
 const formOwe = $('formOwe');
@@ -1644,6 +2135,9 @@ formOwe.addEventListener('submit', e=>{
   const entry = {
     id,
     name: $('oweName').value.trim(),
+
+    phone: $('owePhone').value.trim(),
+
     amount,
     paid,
     remaining: amount - paid,
@@ -1668,7 +2162,7 @@ $('oweReset').addEventListener('click', ()=>{ formOwe.reset(); $('oweId').value=
 function editOwe(id){
   const o = DATA.owes.find(x=>x.id===id);
   if(!o) return;
-  $('oweId').value=o.id; $('oweName').value=o.name; $('oweAmount').value=o.amount;
+  $('oweId').value=o.id; $('oweName').value=o.name; $('owePhone').value=o.phone||''; $('oweAmount').value=o.amount;
   $('owePaid').value=o.paid || 0; $('oweDateBorrowed').value=o.dateBorrowed;
   $('oweDueDate').value=o.dueDate||''; $('oweStatus').value=o.status; $('oweNotes').value=o.notes||'';
   window.scrollTo({top:0,behavior:'smooth'});
@@ -1705,15 +2199,14 @@ function renderOwes(){
       <td>${o.notes ? escapeHtml(o.notes) : '—'}</td>
       <td class="row-actions">
         <button class="btn btn-secondary btn-sm" onclick="editOwe('${o.id}')">✏️</button>
+        <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReminder('owe','${o.id}')" title="WhatsApp Reminder">📲</button>
         <button class="btn btn-danger btn-sm" onclick="deleteOwe('${o.id}')">🗑</button>
       </td>
     </tr>`;
   }).join('');
 }
 function updateOwePersonSuggestions(){
-  const list = $('owePersonSuggestions');
-  const names = [...new Set(DATA.owes.map(x=>(x.name||'').trim()).filter(n=>n!==''))].sort();
-  list.innerHTML = names.map(name=>`<option value="${name}">`).join('');
+  updateAllPersonSuggestions();
 }
 
 /* ================= MONTHLY COMMITMENTS ================= */
@@ -2263,19 +2756,21 @@ function populateCategoryFilter(){
   $('expFilterCategory').innerHTML = '<option value="">All Categories</option>' + cats.map(c=>`<option>${c}</option>`).join('');
 }
   function updatePersonSuggestions() {
+  updateAllPersonSuggestions();
+}
 
-  const list = $('personSuggestions');
-
+/** Shared name list across Money To Collect (lends) and I Owe (owes), so a
+ * person typed in either tab shows up as a suggestion in both. */
+function updateAllPersonSuggestions(){
   const names = [...new Set(
-    DATA.lends
+    [...DATA.lends, ...DATA.owes]
       .map(x => (x.name || '').trim())
       .filter(name => name !== '')
   )].sort();
 
-  list.innerHTML = names
-    .map(name => `<option value="${name}">`)
-    .join('');
-
+  const optionsHtml = names.map(name => `<option value="${name}">`).join('');
+  $('personSuggestions').innerHTML = optionsHtml;
+  $('owePersonSuggestions').innerHTML = optionsHtml;
 }
 
 function setDefaultDates(){
@@ -2290,6 +2785,7 @@ function renderAll(){
   populateCategoryFilter();
   updatePersonSuggestions();
   updateOwePersonSuggestions();
+  loadCardRatesUI();
 
   renderExpenses();
   renderLends();
@@ -2489,6 +2985,7 @@ function cleanupOrphanedLendCardTxns(){
 setDefaultDates();
 cleanupOrphanedLendCardTxns();
 renderAll();
+checkOverdueLends();
 initCloudSync();
 let dataChanged = false;
 
