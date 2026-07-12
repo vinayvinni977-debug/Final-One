@@ -2,25 +2,29 @@
 <html lang="en">
 <head>
   <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#6366f1">
+<meta name="theme-color" content="#2F7A5E">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FinTrack — Personal Finance Tracker</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0f1117; --bg2:#161922; --card:#1c2030; --card2:#22273a;
-  --border:#2a2f42; --text:#e8eaf0; --muted:#8b91a8;
-  --accent:#6366f1; --accent2:#818cf8;
-  --green:#22c55e; --red:#ef4444; --yellow:#f59e0b; --blue:#3b82f6; --purple:#a855f7; --cyan:#06b6d4;
-  --radius:14px; --shadow:0 4px 20px rgba(0,0,0,0.35);
+  --bg:#0B0E13; --bg2:#12161D; --card:#161B24; --card2:#1C2230;
+  --border:#262E3D; --text:#E9ECF2; --muted:#8A93A6;
+  --accent:#2F7A5E; --accent2:#3F9975; --gold:#B9903D;
+  --green:#3FA372; --red:#C1554A; --yellow:#C89A3E; --blue:#4C7FAE; --purple:#7C689E; --cyan:#3E93A0;
+  --radius:10px; --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 24px -14px rgba(0,0,0,.5);
+  --font-display:'Fraunces',Georgia,serif; --font-body:'Inter',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif; --font-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
 }
 .light{
-  --bg:#f4f5f9; --bg2:#ffffff; --card:#ffffff; --card2:#f0f1f6;
-  --border:#e2e4ee; --text:#1a1c29; --muted:#6b7185;
-  --shadow:0 4px 20px rgba(30,30,60,0.08);
+  --bg:#F6F5F0; --bg2:#FFFFFF; --card:#FFFFFF; --card2:#F1EFE7;
+  --border:#E1DECF; --text:#1B1E24; --muted:#6B7280;
+  --shadow:0 1px 2px rgba(20,16,8,.05), 0 8px 20px -12px rgba(20,16,8,.12);
 }
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:var(--font-body);font-variant-numeric:tabular-nums;}
 body{background:var(--bg);color:var(--text);transition:background .25s,color .25s;min-height:100vh;}
 a{color:inherit;}
 button{cursor:pointer;border:none;font-family:inherit;}
@@ -33,26 +37,26 @@ input,select,textarea{font-family:inherit;}
   display:flex;flex-direction:column;padding:20px 14px;position:fixed;top:0;left:0;height:100vh;
   z-index:200;transition:transform .25s;
 }
-.brand{display:flex;align-items:center;gap:10px;padding:8px 10px 24px;font-size:20px;font-weight:700;}
+.brand{display:flex;align-items:center;gap:10px;padding:8px 10px 24px;font-size:19px;font-weight:600;font-family:var(--font-display);letter-spacing:.2px;}
 .brand .logo{
-  width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--purple));
-  display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;
+  width:34px;height:34px;border-radius:8px;background:var(--accent);border:1px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;font-family:var(--font-display);
 }
-.nav-list{list-style:none;display:flex;flex-direction:column;gap:4px;flex:1;}
+.nav-list{list-style:none;display:flex;flex-direction:column;gap:2px;flex:1;}
 .nav-item{
-  display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;color:var(--muted);
-  cursor:pointer;font-size:14.5px;font-weight:500;transition:.15s;
+  display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:8px;color:var(--muted);
+  cursor:pointer;font-size:14.5px;font-weight:500;transition:.15s;border-left:3px solid transparent;
 }
 .nav-item .icon{width:20px;text-align:center;font-size:17px;}
 .nav-item:hover{background:var(--card2);color:var(--text);}
-.nav-item.active{background:var(--accent);color:#fff;}
+.nav-item.active{background:var(--card2);color:var(--text);border-left-color:var(--gold);}
 .sidebar-footer{font-size:11px;color:var(--muted);padding:10px;text-align:center;}
 
 .main{flex:1;margin-left:230px;padding:22px 26px 60px;max-width:100%;}
 .topbar{
   display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;gap:12px;flex-wrap:wrap;
 }
-.topbar h1{font-size:24px;font-weight:700;}
+.topbar h1{font-size:23px;font-weight:600;font-family:var(--font-display);}
 .topbar .sub{color:var(--muted);font-size:13px;margin-top:2px;}
 .menu-toggle{display:none;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:18px;color:var(--text);}
 
@@ -68,19 +72,19 @@ input,select,textarea{font-family:inherit;}
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
   padding:18px;box-shadow:var(--shadow);position:relative;overflow:hidden;
 }
-.card .label{font-size:12.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
-.card .value{font-size:26px;font-weight:800;margin-top:8px;}
+.card .label{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px;}
+.card .value{font-size:25px;font-weight:600;margin-top:8px;font-family:var(--font-mono);letter-spacing:-.3px;}
 .card .icon-badge{
-  position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:10px;
-  display:flex;align-items:center;justify-content:center;font-size:18px;opacity:.9;
+  position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:17px;opacity:.95;
 }
 .card .sub{font-size:12px;color:var(--muted);margin-top:6px;}
-.card.green .icon-badge{background:rgba(34,197,94,.15);color:var(--green);}
-.card.red .icon-badge{background:rgba(239,68,68,.15);color:var(--red);}
-.card.yellow .icon-badge{background:rgba(245,158,11,.15);color:var(--yellow);}
-.card.blue .icon-badge{background:rgba(59,130,246,.15);color:var(--blue);}
-.card.purple .icon-badge{background:rgba(168,85,247,.15);color:var(--purple);}
-.card.cyan .icon-badge{background:rgba(6,182,212,.15);color:var(--cyan);}
+.card.green .icon-badge{background:rgba(63,163,114,.14);color:var(--green);}
+.card.red .icon-badge{background:rgba(193,85,74,.14);color:var(--red);}
+.card.yellow .icon-badge{background:rgba(200,154,62,.14);color:var(--yellow);}
+.card.blue .icon-badge{background:rgba(76,127,174,.14);color:var(--blue);}
+.card.purple .icon-badge{background:rgba(124,104,158,.14);color:var(--purple);}
+.card.cyan .icon-badge{background:rgba(62,147,160,.14);color:var(--cyan);}
 .card.net.pos .value{color:var(--green);}
 .card.net.neg .value{color:var(--red);}
 
@@ -108,27 +112,27 @@ textarea{resize:vertical;min-height:60px;}
 .field{margin-bottom:4px;}
 .form-actions{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;}
 .btn{
-  padding:10px 18px;border-radius:9px;font-size:14px;font-weight:600;transition:.15s;
+  padding:10px 18px;border-radius:8px;font-size:14px;font-weight:600;transition:.15s;
 }
 .btn-primary{background:var(--accent);color:#fff;}
 .btn-primary:hover{background:var(--accent2);}
 .btn-secondary{background:var(--card2);color:var(--text);border:1px solid var(--border);}
 .btn-secondary:hover{background:var(--border);}
-.btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);}
-.btn-danger:hover{background:rgba(239,68,68,.25);}
-.btn-sm{padding:6px 10px;font-size:12px;border-radius:7px;}
+.btn-danger{background:rgba(193,85,74,.14);color:var(--red);border:1px solid rgba(193,85,74,.3);}
+.btn-danger:hover{background:rgba(193,85,74,.24);}
+.btn-sm{padding:6px 10px;font-size:12px;border-radius:6px;}
 
 /* Tables */
 .table-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:620px;}
 th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
-th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px;}
+th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;}
 tbody tr:hover{background:var(--card2);}
-.badge{padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700;display:inline-block;}
-.badge.pending{background:rgba(245,158,11,.15);color:var(--yellow);}
-.badge.partial{background:rgba(59,130,246,.15);color:var(--blue);}
-.badge.received,.badge.paid{background:rgba(34,197,94,.15);color:var(--green);}
-.badge.unpaid,.badge.due{background:rgba(239,68,68,.15);color:var(--red);}
+.badge{padding:3px 9px;border-radius:4px;font-size:11px;font-weight:600;display:inline-block;font-family:var(--font-mono);letter-spacing:.2px;}
+.badge.pending{background:rgba(200,154,62,.14);color:var(--yellow);}
+.badge.partial{background:rgba(76,127,174,.14);color:var(--blue);}
+.badge.received,.badge.paid{background:rgba(63,163,114,.14);color:var(--green);}
+.badge.unpaid,.badge.due{background:rgba(193,85,74,.14);color:var(--red);}
 .row-actions{display:flex;gap:6px;}
 .empty-row td{text-align:center;color:var(--muted);padding:24px;}
 
@@ -142,7 +146,7 @@ tbody tr:hover{background:var(--card2);}
 .alert-item.ok{border-left-color:var(--green);}
 .alert-item .a-title{font-weight:600;font-size:14px;}
 .alert-item .a-sub{font-size:12px;color:var(--muted);}
-.alert-item .a-amt{font-weight:700;font-size:14px;}
+.alert-item .a-amt{font-weight:600;font-size:14px;font-family:var(--font-mono);}
 
 /* Filters */
 .filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
@@ -179,14 +183,14 @@ input:checked + .slider:before{transform:translateX(20px);}
 .report-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px;}
 .report-summary .mini{background:var(--card2);padding:14px;border-radius:10px;}
 .report-summary .mini .label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;}
-.report-summary .mini .val{font-size:18px;font-weight:800;margin-top:4px;}
+.report-summary .mini .val{font-size:18px;font-weight:600;margin-top:4px;font-family:var(--font-mono);}
 
 /* Modal-ish confirm */
 .overlay{
   position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:500;
 }
 .overlay.show{display:flex;}
-.confirm-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:340px;text-align:center;box-shadow:var(--shadow);}
+.confirm-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;max-width:340px;text-align:center;box-shadow:var(--shadow);}
 .confirm-box p{margin:10px 0 18px;color:var(--muted);font-size:14px;}
 .confirm-box .form-actions{justify-content:center;}
 
@@ -280,7 +284,10 @@ style="cursor:pointer;">
       </div>
 
       <div class="section">
-        <div class="section-title">🔔 Upcoming Alerts &amp; Reminders</div>
+        <div class="section-title">
+          <span>🔔 Upcoming Alerts &amp; Reminders</span>
+          <button class="btn btn-secondary btn-sm" onclick="checkOverdueLends(true)">🔁 Check Overdue Now</button>
+        </div>
         <div id="alertsList"></div>
       </div>
 
@@ -1008,7 +1015,11 @@ async function initCloudSync(){
 /* ================= HELPERS ================= */
 const $ = id => document.getElementById(id);
 const fmt = n => '₹' + Number(n||0).toLocaleString('en-IN', {maximumFractionDigits:2});
-const todayStr = () => new Date().toISOString().slice(0,10);
+const todayStr = () => {
+  const d = new Date();
+  const local = new Date(d.getTime() - d.getTimezoneOffset()*60000);
+  return local.toISOString().slice(0,10);
+};
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 
 function showToast(msg, isError=false){
@@ -1452,23 +1463,28 @@ function daysOverdue(dueDate){
 }
 
 /** Scans Credit-Card-sourced lends and Monthly Commitments for passed due dates, and walks through them one at a time. */
-function checkOverdueLends(){
+function checkOverdueLends(ignoreSnooze){
   const today = todayStr();
   const lendItems = DATA.lends.filter(l=>
     l.source === 'Credit Card' &&
     l.dueDate && l.dueDate < today &&
     l.status !== 'Received' &&
     ((Number(l.amount)||0) - (Number(l.received)||0)) > 0.01 &&
-    (!l.overdueSnoozeUntil || l.overdueSnoozeUntil <= today)
+    (ignoreSnooze || !l.overdueSnoozeUntil || l.overdueSnoozeUntil <= today)
   ).map(l=>({type:'lend', id:l.id, dueDate:l.dueDate}));
 
   const commitItems = DATA.commitments.filter(c=>
     c.dueDate && c.dueDate < today &&
     c.status !== 'Paid' &&
-    (!c.overdueSnoozeUntil || c.overdueSnoozeUntil <= today)
+    (ignoreSnooze || !c.overdueSnoozeUntil || c.overdueSnoozeUntil <= today)
   ).map(c=>({type:'commit', id:c.id, dueDate:c.dueDate}));
 
   overdueQueue = [...lendItems, ...commitItems].sort((a,b)=> a.dueDate.localeCompare(b.dueDate));
+
+  if(overdueQueue.length === 0 && ignoreSnooze){
+    showToast('No overdue items right now 🎉');
+    return;
+  }
   showNextOverdue();
 }
 
@@ -1653,7 +1669,7 @@ function viewLendHistory(id){
   const totalCharges = history.reduce((s,c)=>s+(Number(c.charge)||0),0);
 
   let html = `
-    <div style="padding:10px;border-bottom:1px solid #444;">
+    <div style="padding:10px;border-bottom:1px solid var(--border);">
       <b>${escapeHtml(l.name)}</b> — ${l.source === 'Credit Card' ? `via ${escapeHtml(l.cardName||'')} Credit Card` : escapeHtml(l.source||'Cash')}<br>
       Principal: ₹${(l.principal||0).toFixed(2)}<br>
       Total Charges: ₹${totalCharges.toFixed(2)}<br>
@@ -1666,7 +1682,7 @@ function viewLendHistory(id){
   } else {
     [...history].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).forEach(c=>{
       html += `
-      <div style="padding:10px;border-bottom:1px solid #444;">
+      <div style="padding:10px;border-bottom:1px solid var(--border);">
         📅 ${c.date||'—'}<br>
         Withdrawn: ₹${(Number(c.withdrawn)||0).toFixed(2)}<br>
         <b>Charge: ₹${(Number(c.charge)||0).toFixed(2)}</b>
@@ -1771,6 +1787,7 @@ function renderPersonSummary(){
   tbody.innerHTML = names.map(name=>{
     const g = groups[name];
     const pending = Math.max(0, g.given - g.received);
+    const safeName = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     return `
     <tr>
       <td>${escapeHtml(name)}</td>
@@ -1779,7 +1796,8 @@ function renderPersonSummary(){
       <td>${fmt(pending)}</td>
       <td>${g.count} entr${g.count===1?'y':'ies'}</td>
       <td class="row-actions">
-        <button class="btn btn-secondary btn-sm" onclick="viewPersonBreakdown('${name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">🔍 Breakdown</button>
+        <button class="btn btn-secondary btn-sm" onclick="viewPersonBreakdown('${safeName}')">🔍 Breakdown</button>
+        <button class="btn btn-secondary btn-sm" onclick="sendWhatsAppReminderCombined('${safeName}')" title="WhatsApp Reminder (combined)">📲</button>
       </td>
     </tr>`;
   }).join('');
@@ -1795,7 +1813,7 @@ function viewPersonBreakdown(name){
   const totalPending = Math.max(0, totalGiven - totalReceived);
 
   let html = `
-    <div style="padding:10px;border-bottom:1px solid #444;">
+    <div style="padding:10px;border-bottom:1px solid var(--border);">
       <b>${escapeHtml(name)}</b> — ${entries.length} entr${entries.length===1?'y':'ies'} across ${new Set(entries.map(l=>l.source==='Credit Card'?l.cardName:l.source)).size} source(s)<br>
       Total Given: ${fmt(totalGiven)}<br>
       Total Received: ${fmt(totalReceived)}<br>
@@ -1806,16 +1824,59 @@ function viewPersonBreakdown(name){
     const isCC = l.source === 'Credit Card';
     const pending = Math.max(0, (Number(l.amount)||0) - (Number(l.received)||0));
     html += `
-    <div style="padding:10px;border-bottom:1px solid #444;">
+    <div style="padding:10px;border-bottom:1px solid var(--border);">
       ${isCC ? `💳 ${escapeHtml(l.cardName||'')}` : escapeHtml(l.source||'Cash')}<br>
       Given: ${fmt(l.amount)} · Received: ${fmt(l.received||0)} · Pending: ${fmt(pending)}<br>
-      <span class="sub">Given on ${l.dateGiven||'—'}${l.dueDate ? `, due ${l.dueDate}` : ''} · ${l.status}</span>
+      <span class="sub">Given on ${l.dateGiven||'—'}${l.dueDate ? `, due ${l.dueDate}` : ''} · ${l.status}</span><br>
+      <div style="margin-top:6px;">
+        <button class="btn btn-secondary btn-sm" onclick="closeDetails();editLend('${l.id}')">✏️ Edit</button>
+        ${isCC ? `<button class="btn btn-secondary btn-sm" onclick="closeDetails();editLend('${l.id}')">💳+ Add Charge</button>` : ''}
+      </div>
     </div>`;
   });
 
   $('detailTitle').innerHTML = `${escapeHtml(name)} — Combined Breakdown`;
   $('detailContent').innerHTML = html;
   $('detailModal').style.display = 'block';
+}
+
+/** Sends one WhatsApp reminder covering a person's combined total across all their entries. */
+function sendWhatsAppReminderCombined(name){
+  const entries = DATA.lends.filter(l=>(l.name||'').trim() === name);
+  if(entries.length === 0) return;
+
+  const withPhone = entries.find(l=>l.phone && l.phone.trim());
+  const digits = withPhone ? withPhone.phone.replace(/[^0-9]/g,'') : '';
+  if(!digits){
+    showToast('Add a phone number for ' + name + ' first', true);
+    editLend(entries[0].id);
+    return;
+  }
+
+  const totalGiven = entries.reduce((s,l)=>s+(Number(l.amount)||0),0);
+  const totalReceived = entries.reduce((s,l)=>s+(Number(l.received)||0),0);
+  const totalPending = totalGiven - totalReceived;
+
+  let lines = [`Hi ${name}, here's your combined pending balance:`];
+
+  if(entries.length > 1){
+    entries.forEach(l=>{
+      const pending = (Number(l.amount)||0) - (Number(l.received)||0);
+      if(pending > 0.01){
+        const src = l.source === 'Credit Card' ? `via ${l.cardName}` : l.source;
+        lines.push(`- ${fmt(pending)} (${src}${l.dueDate ? `, due ${l.dueDate}` : ''})`);
+      }
+    });
+  }
+
+  lines.push(`Total Given: ${fmt(totalGiven)}`);
+  lines.push(`Total Received: ${fmt(totalReceived)}`);
+  lines.push(`Total Pending: ${fmt(totalPending)}`);
+  lines.push('Please pay when convenient. Thanks!');
+
+  const message = lines.join('\n');
+  const url = `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+  window.open(url, '_blank');
 }
 
 /* ================= CREDIT CARDS ================= */
@@ -2523,9 +2584,9 @@ let charts = {};
 function getThemeColors(){
   const isLight = document.body.classList.contains('light');
   return {
-    text: isLight ? '#1a1c29' : '#e8eaf0',
-    grid: isLight ? '#e2e4ee' : '#2a2f42',
-    palette: ['#6366f1','#22c55e','#f59e0b','#ef4444','#3b82f6','#a855f7','#06b6d4','#ec4899']
+    text: isLight ? '#1B1E24' : '#E9ECF2',
+    grid: isLight ? '#E1DECF' : '#262E3D',
+    palette: ['#2F7A5E','#B9903D','#4C7FAE','#C1554A','#7C689E','#3E93A0','#3FA372','#C89A3E']
   };
 }
 function destroyChart(key){ if(charts[key]){ charts[key].destroy(); delete charts[key]; } }
@@ -2554,7 +2615,7 @@ function renderTrendChart(){
   destroyChart('trend');
   charts.trend = new Chart($('chartTrend'), {
     type:'line',
-    data:{ labels, datasets:[{ label:'Expenses', data: totals, borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,0.15)', tension:0.35, fill:true, pointBackgroundColor:'#6366f1' }] },
+    data:{ labels, datasets:[{ label:'Expenses', data: totals, borderColor:'#2F7A5E', backgroundColor:'rgba(47,122,94,0.15)', tension:0.35, fill:true, pointBackgroundColor:'#2F7A5E' }] },
     options:{ responsive:true, plugins:{legend:{display:false}}, scales:{
       x:{ ticks:{color:colors.text}, grid:{color:colors.grid} },
       y:{ ticks:{color:colors.text}, grid:{color:colors.grid}, beginAtZero:true }
@@ -2571,7 +2632,7 @@ function renderCategoryChart(){
   destroyChart('category');
   charts.category = new Chart($('chartCategory'), {
     type:'doughnut',
-    data:{ labels: cats, datasets:[{ data: hasData ? data : [1], backgroundColor: hasData ? colors.palette : ['#2a2f42'], borderWidth:0 }] },
+    data:{ labels: cats, datasets:[{ data: hasData ? data : [1], backgroundColor: hasData ? colors.palette : ['#262E3D'], borderWidth:0 }] },
     options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{color:colors.text, boxWidth:12, font:{size:11}} } } }
   });
 }
@@ -2584,7 +2645,7 @@ function renderCardUsageChart(){
   destroyChart('cards');
   charts.cards = new Chart($('chartCards'), {
     type:'bar',
-    data:{ labels: CARD_NAMES, datasets:[{ label:'Outstanding', data: hasData?data:[0,0,0,0,0], backgroundColor:'#a855f7', borderRadius:6 }] },
+    data:{ labels: CARD_NAMES, datasets:[{ label:'Outstanding', data: hasData?data:[0,0,0,0,0], backgroundColor:'#B9903D', borderRadius:4 }] },
     options:{ responsive:true, plugins:{legend:{display:false}}, scales:{
       x:{ ticks:{color:colors.text}, grid:{display:false} },
       y:{ ticks:{color:colors.text}, grid:{color:colors.grid}, beginAtZero:true }
@@ -2605,7 +2666,7 @@ function renderLendChart(){
   destroyChart('lend');
   charts.lend = new Chart($('chartLend'), {
     type:'bar',
-    data:{ labels:['Total Lent','Received (est.)','Pending'], datasets:[{ data:[lent, received, pending], backgroundColor:['#3b82f6','#22c55e','#f59e0b'], borderRadius:6 }] },
+    data:{ labels:['Total Lent','Received (est.)','Pending'], datasets:[{ data:[lent, received, pending], backgroundColor:['#4C7FAE','#3FA372','#C89A3E'], borderRadius:4 }] },
     options:{ responsive:true, plugins:{legend:{display:false}}, scales:{
       x:{ ticks:{color:colors.text}, grid:{display:false} },
       y:{ ticks:{color:colors.text}, grid:{color:colors.grid}, beginAtZero:true }
@@ -2809,48 +2870,69 @@ function showDashboardDetails(type){
 
    title="Money To Collect";
 
+   const collectGroups = {};
    DATA.lends.forEach(x=>{
+     const key = (x.name||'').trim();
+     if(!key) return;
+     if(!collectGroups[key]) collectGroups[key] = { given:0, received:0, dueDate:'' };
+     collectGroups[key].given += Number(x.amount)||0;
+     collectGroups[key].received += Number(x.received)||0;
+     // Keep the earliest upcoming/overdue due date among this person's entries for display
+     if(x.dueDate && (!collectGroups[key].dueDate || x.dueDate < collectGroups[key].dueDate)){
+       collectGroups[key].dueDate = x.dueDate;
+     }
+   });
 
-   const amount = Number(x.amount) || 0;
-   const received = Number(x.received) || 0;
-   const pending = amount - received;
+   Object.keys(collectGroups).sort().forEach(name=>{
+     const g = collectGroups[name];
+     const pending = g.given - g.received;
 
-   if(pending > 0){
+     if(pending > 0){
 
       html += `
-      <div style="padding:10px;border-bottom:1px solid #444;">
-      <b>${x.name}</b><br>
-      Given: ₹${amount.toLocaleString()}<br>
-      Received: ₹${received.toLocaleString()}<br>
+      <div style="padding:10px;border-bottom:1px solid var(--border);">
+      <b>${escapeHtml(name)}</b><br>
+      Given: ₹${g.given.toLocaleString()}<br>
+      Received: ₹${g.received.toLocaleString()}<br>
       Pending: ₹${pending.toLocaleString()}<br>
-      Due: ${x.dueDate || "-"}
+      Due: ${g.dueDate || "-"}
       </div>`;
-   }
-});
+     }
+   });
  }
 
  else if(type==="owe"){
 
    title="Money You Owe";
 
+   const oweGroups = {};
    DATA.owes.forEach(x=>{
+     const key = (x.name||'').trim();
+     if(!key) return;
+     if(!oweGroups[key]) oweGroups[key] = { borrowed:0, paid:0, dueDate:'' };
+     oweGroups[key].borrowed += Number(x.amount)||0;
+     oweGroups[key].paid += Number(x.paid)||0;
+     if(x.dueDate && (!oweGroups[key].dueDate || x.dueDate < oweGroups[key].dueDate)){
+       oweGroups[key].dueDate = x.dueDate;
+     }
+   });
 
-   const amount = Number(x.amount) || 0;
-   const paid = Number(x.paid) || 0;
-   const remaining = amount - paid;
+   Object.keys(oweGroups).sort().forEach(name=>{
+     const g = oweGroups[name];
+     const remaining = g.borrowed - g.paid;
 
-   if(remaining > 0){
+     if(remaining > 0){
 
       html += `
-      <div style="padding:10px;border-bottom:1px solid #444;">
-      <b>${escapeHtml(x.name)}</b><br>
-      Borrowed: ₹${amount.toLocaleString()}<br>
-      Paid: ₹${paid.toLocaleString()}<br>
+      <div style="padding:10px;border-bottom:1px solid var(--border);">
+      <b>${escapeHtml(name)}</b><br>
+      Borrowed: ₹${g.borrowed.toLocaleString()}<br>
+      Paid: ₹${g.paid.toLocaleString()}<br>
       Remaining: ₹${remaining.toLocaleString()}<br>
-      Due: ${x.dueDate || "-"}
+      Due: ${g.dueDate || "-"}
       </div>`;
-   }
-});
+     }
+   });
  }
 
  else if(type==="expenses"){
@@ -2859,7 +2941,7 @@ function showDashboardDetails(type){
 
    DATA.expenses.forEach(x=>{
       html+=`
-      <div style="padding:10px;border-bottom:1px solid #444;">
+      <div style="padding:10px;border-bottom:1px solid var(--border);">
       ₹${x.amount} - ${x.category}<br>
       ${x.date}
       </div>`;
@@ -2877,7 +2959,7 @@ function showDashboardDetails(type){
       .reduce((a,b)=>a+b.amount,0);
 
       html+=`
-      <div style="padding:10px;border-bottom:1px solid #444;">
+      <div style="padding:10px;border-bottom:1px solid var(--border);">
       ${card}: ₹${total}
       </div>`;
    });
@@ -2889,7 +2971,7 @@ function showDashboardDetails(type){
 
    DATA.commitments.forEach(x=>{
       html+=`
-      <div style="padding:10px;border-bottom:1px solid #444;">
+      <div style="padding:10px;border-bottom:1px solid var(--border);">
       ${x.name}<br>
       Amount: ₹${x.amount}<br>
       Due: ${x.dueDate}<br>
@@ -2904,7 +2986,7 @@ function showDashboardDetails(type){
 
    DATA.cycles.forEach(x=>{
       html+=`
-      <div style="padding:10px;border-bottom:1px solid #444;">
+      <div style="padding:10px;border-bottom:1px solid var(--border);">
       ${x.cardName}<br>
       Bill Paid: ₹${x.billPaid}<br>
       Date: ${x.date}
@@ -3031,13 +3113,14 @@ z-index:999999;
 ">
 
 <div style="
-background:#1c2030;
+background:var(--card);
 margin:40px auto;
 padding:20px;
 width:90%;
 max-width:700px;
-border-radius:12px;
-color:white;
+border-radius:10px;
+color:var(--text);
+border:1px solid var(--border);
 max-height:80vh;
 overflow:auto;
 ">
@@ -3054,7 +3137,7 @@ style="
 padding:10px 20px;
 border:none;
 border-radius:8px;
-background:#ef4444;
+background:var(--red);
 color:white;
 ">
 Close
