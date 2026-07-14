@@ -992,17 +992,12 @@ async function initCloudSync(){
     return;
   }
   setSyncStatus('⏳ Connecting...');
+  // Just verify the connection — do NOT auto-pull and overwrite local data.
+  // Local data is always authoritative; use the Pull button if you deliberately
+  // want to bring in whatever's on the sheet instead.
   const data = await apiRequest('getAll');
   if(data){
-    // If the sheet has any data, use it as the source of truth.
-    const hasCloudData = Object.values(data).some(arr => Array.isArray(arr) && arr.length > 0);
-    if(hasCloudData){
-      DATA = Object.assign(JSON.parse(JSON.stringify(defaultData)), data);
-      coerceNumericFields();
-      saveData();
-      renderAll();
-    }
-    setSyncStatus('✅ Connected · Last synced ' + new Date().toLocaleTimeString());
+    setSyncStatus('✅ Connected · Local data is up to date here');
   } else {
     setSyncStatus('⚠️ Could not connect — check URL/secret (using Local Storage)');
   }
@@ -1316,10 +1311,11 @@ if (idx >= 0) {
             existingCard.txnDate = entry.dateGiven;
             existingCard.dueDate = entry.dueDate;
             existingCard.notes = cardNote;
+            cloudSave('cards', existingCard);
 
         } else {
             // Source was switched TO Credit Card during edit — create it now.
-            DATA.cards.push({
+            const newCard = {
                 id: uid(),
                 transactionId: entry.transactionId,
                 cardName: entry.cardName,
@@ -1327,13 +1323,16 @@ if (idx >= 0) {
                 txnDate: entry.dateGiven,
                 dueDate: entry.dueDate,
                 notes: cardNote
-            });
+            };
+            DATA.cards.push(newCard);
+            cloudSave('cards', newCard);
         }
 
     } else if (existingCard) {
         // Source was switched AWAY from Credit Card — remove the stale
         // transaction so it stops inflating Credit Card Outstanding.
         DATA.cards = DATA.cards.filter(c => c.transactionId !== entry.transactionId);
+        cloudDelete('cards', existingCard.id);
     }
 
 } else {
@@ -1346,7 +1345,7 @@ if (idx >= 0) {
     // Automatically create Credit Card transaction
     if (entry.source === "Credit Card") {
 
-        DATA.cards.push({
+        const newCard = {
 
             id: uid(),
 
@@ -1362,7 +1361,10 @@ if (idx >= 0) {
 
             notes: cardNote
 
-        });
+        };
+
+        DATA.cards.push(newCard);
+        cloudSave('cards', newCard);
 
     }
 }
@@ -1442,6 +1444,7 @@ function recalcLendCharges(l){
     if(card){
       card.amount = Math.max(0, l.pending);
       card.notes = `Lent via ${l.cardName} Credit Card: Principal ₹${(l.principal||0).toFixed(2)}, Total Due ₹${l.totalDue.toFixed(2)}, Received ₹${(l.received||0).toFixed(2)} → Remaining Outstanding ₹${Math.max(0,l.pending).toFixed(2)} (payable by ${l.name}).`;
+      cloudSave('cards', card);
     }
   }
 }
@@ -1449,7 +1452,7 @@ function recalcLendCharges(l){
 /* ================= OVERDUE DUE-DATE CHECK-IN ================= */
 let overdueQueue = [];
 let overdueCurrentId = null;
-let overdueCurrentType = null; // 'lend' or 'commit'
+let overdueCurrentType = null; // 'lend', 'commit', or 'cardbill'
 const OVERDUE_ESCALATE_AT = 5; // snoozes before the popup gets more insistent
 
 function daysOverdue(dueDate){
@@ -1458,11 +1461,10 @@ function daysOverdue(dueDate){
   return Math.max(0, Math.round((today - due) / 86400000));
 }
 
-/** Scans Credit-Card-sourced lends and Monthly Commitments for passed due dates, and walks through them one at a time. */
-function checkOverdueLends(ignoreSnooze){
+/** Builds the list of everything currently overdue: lends (any source), commitments, and your own card bills. */
+function buildOverdueQueue(ignoreSnooze){
   const today = todayStr();
   const lendItems = DATA.lends.filter(l=>
-    l.source === 'Credit Card' &&
     l.dueDate && l.dueDate < today &&
     l.status !== 'Received' &&
     ((Number(l.amount)||0) - (Number(l.received)||0)) > 0.01 &&
@@ -1475,8 +1477,18 @@ function checkOverdueLends(ignoreSnooze){
     (ignoreSnooze || !c.overdueSnoozeUntil || c.overdueSnoozeUntil <= today)
   ).map(c=>({type:'commit', id:c.id, dueDate:c.dueDate}));
 
-  overdueQueue = [...lendItems, ...commitItems].sort((a,b)=> a.dueDate.localeCompare(b.dueDate));
+  const cardBillItems = DATA.cards.filter(c=>
+    !c.transactionId && // exclude lend-linked transactions — those surface via the lend popup instead
+    c.dueDate && c.dueDate < today &&
+    (ignoreSnooze || !c.overdueSnoozeUntil || c.overdueSnoozeUntil <= today)
+  ).map(c=>({type:'cardbill', id:c.id, dueDate:c.dueDate}));
 
+  return [...lendItems, ...commitItems, ...cardBillItems].sort((a,b)=> a.dueDate.localeCompare(b.dueDate));
+}
+
+/** Scans everything overdue and walks through it one at a time. */
+function checkOverdueLends(ignoreSnooze){
+  overdueQueue = buildOverdueQueue(ignoreSnooze);
   if(overdueQueue.length === 0 && ignoreSnooze){
     showToast('No overdue items right now 🎉');
     return;
@@ -1493,11 +1505,16 @@ function showNextOverdue(){
   if(next.type === 'lend'){
     const l = DATA.lends.find(x=>x.id===next.id);
     if(!l){ showNextOverdue(); return; } // was deleted meanwhile — skip
-    renderOverdueStepAsk(l);
-  } else {
+    if(l.source === 'Credit Card') renderOverdueStepAsk(l);
+    else renderOverdueCashStepAsk(l);
+  } else if(next.type === 'commit'){
     const c = DATA.commitments.find(x=>x.id===next.id);
     if(!c){ showNextOverdue(); return; }
     renderOverdueCommitAsk(c);
+  } else {
+    const c = DATA.cards.find(x=>x.id===next.id);
+    if(!c){ showNextOverdue(); return; }
+    renderOverdueCardBillAsk(c);
   }
   $('overdueModal').classList.add('show');
 }
@@ -1506,6 +1523,30 @@ function escalationBanner(snoozeCount){
   if((snoozeCount||0) < OVERDUE_ESCALATE_AT) return '';
   return `<p style="color:var(--red);"><b>⚠️ This has been snoozed ${snoozeCount} times — still want to snooze, or handle it now?</b></p>`;
 }
+
+function overdueRecordFor(type, id){
+  if(type === 'lend') return DATA.lends.find(x=>x.id===id);
+  if(type === 'commit') return DATA.commitments.find(x=>x.id===id);
+  return DATA.cards.find(x=>x.id===id);
+}
+function overdueTableFor(type){
+  return type === 'lend' ? 'lends' : (type === 'commit' ? 'commitments' : 'cards');
+}
+
+function overdueSnooze(){
+  const record = overdueRecordFor(overdueCurrentType, overdueCurrentId);
+  if(record){
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate()+1);
+    record.overdueSnoozeUntil = tomorrow.toISOString().slice(0,10);
+    record.overdueSnoozeCount = (record.overdueSnoozeCount||0) + 1;
+    saveData();
+    cloudSave(overdueTableFor(overdueCurrentType), record);
+  }
+  showNextOverdue();
+}
+
+/* ---- Credit-Card-sourced lends: full flow with charges ---- */
 
 function renderOverdueStepAsk(l){
   const pending = (Number(l.amount)||0) - (Number(l.received)||0);
@@ -1521,21 +1562,6 @@ function renderOverdueStepAsk(l){
       <button class="btn btn-primary" onclick="overdueStepPaid()">✅ Paid</button>
     </div>
   `;
-}
-
-function overdueSnooze(){
-  const record = overdueCurrentType === 'lend'
-    ? DATA.lends.find(x=>x.id===overdueCurrentId)
-    : DATA.commitments.find(x=>x.id===overdueCurrentId);
-  if(record){
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate()+1);
-    record.overdueSnoozeUntil = tomorrow.toISOString().slice(0,10);
-    record.overdueSnoozeCount = (record.overdueSnoozeCount||0) + 1;
-    saveData();
-    cloudSave(overdueCurrentType === 'lend' ? 'lends' : 'commitments', record);
-  }
-  showNextOverdue();
 }
 
 function overdueStepPaid(){
@@ -1628,6 +1654,94 @@ function overdueConfirmRefinance(){
   showNextOverdue();
 }
 
+/* ---- Cash/UPI/Bank-sourced lends: simplified flow, no charges ---- */
+
+function renderOverdueCashStepAsk(l){
+  const pending = (Number(l.amount)||0) - (Number(l.received)||0);
+  const days = daysOverdue(l.dueDate);
+  $('overdueModalContent').innerHTML = `
+    <h3>⏰ Overdue: ${escapeHtml(l.name)}</h3>
+    <p>${fmt(pending)} (${escapeHtml(l.source||'Cash')}) was due on ${l.dueDate} (${days} day${days===1?'':'s'} ago).</p>
+    ${escalationBanner(l.overdueSnoozeCount)}
+    <p><b>Has ${escapeHtml(l.name)} paid this?</b></p>
+    <div class="form-actions" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <button class="btn btn-secondary" onclick="overdueSnooze()">⏳ Snooze</button>
+      <button class="btn btn-danger" onclick="overdueCashStepUnpaid()">❌ Not Paid</button>
+      <button class="btn btn-primary" onclick="overdueCashStepPaid()">✅ Paid</button>
+    </div>
+  `;
+}
+
+function overdueCashStepPaid(){
+  const l = DATA.lends.find(x=>x.id===overdueCurrentId);
+  const pending = (Number(l.amount)||0) - (Number(l.received)||0);
+  $('overdueModalContent').innerHTML = `
+    <h3>${escapeHtml(l.name)} paid</h3>
+    <div class="field"><label>How much did they pay? (₹)</label>
+      <input type="number" id="overdueCashPaidAmount" step="0.01" min="0" value="${pending.toFixed(2)}">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="renderOverdueCashStepAsk(DATA.lends.find(x=>x.id==='${l.id}'))">Back</button>
+      <button class="btn btn-primary" onclick="overdueCashConfirmPaid()">Continue</button>
+    </div>
+  `;
+}
+
+function overdueCashConfirmPaid(){
+  const l = DATA.lends.find(x=>x.id===overdueCurrentId);
+  if(!l) { showNextOverdue(); return; }
+  const paidNow = Number($('overdueCashPaidAmount').value) || 0;
+  l.received = (Number(l.received)||0) + paidNow;
+  const remaining = (Number(l.amount)||0) - l.received;
+
+  if(remaining <= 0.01){
+    l.status = 'Received';
+    delete l.overdueSnoozeUntil;
+    delete l.overdueSnoozeCount;
+    saveData(); cloudSave('lends', l);
+    renderLends(); renderDashboard();
+    showToast(`${l.name} fully paid — marked as Received`);
+    showNextOverdue();
+  } else {
+    l.status = 'Partially Received';
+    saveData(); cloudSave('lends', l);
+    renderLends(); renderDashboard();
+    renderOverdueCashNewDueDate(l, remaining);
+  }
+}
+
+function overdueCashStepUnpaid(){
+  const l = DATA.lends.find(x=>x.id===overdueCurrentId);
+  const pending = (Number(l.amount)||0) - (Number(l.received)||0);
+  renderOverdueCashNewDueDate(l, pending);
+}
+
+function renderOverdueCashNewDueDate(l, remaining){
+  $('overdueModalContent').innerHTML = `
+    <h3>${fmt(remaining)} still pending for ${escapeHtml(l.name)}</h3>
+    <div class="field"><label>New Due Date (optional)</label><input type="date" id="overdueCashNewDueDate"></div>
+    <div class="form-actions">
+      <button class="btn btn-secondary" onclick="overdueSnooze()">Skip for now</button>
+      <button class="btn btn-primary" onclick="overdueCashConfirmDueDate()">Save</button>
+    </div>
+  `;
+}
+
+function overdueCashConfirmDueDate(){
+  const l = DATA.lends.find(x=>x.id===overdueCurrentId);
+  if(!l) { showNextOverdue(); return; }
+  const newDue = $('overdueCashNewDueDate').value;
+  if(newDue) l.dueDate = newDue;
+  delete l.overdueSnoozeUntil;
+  delete l.overdueSnoozeCount;
+  saveData(); cloudSave('lends', l);
+  renderLends(); renderDashboard();
+  showToast('Updated');
+  showNextOverdue();
+}
+
+/* ---- Monthly Commitments ---- */
+
 function renderOverdueCommitAsk(c){
   const days = daysOverdue(c.dueDate);
   $('overdueModalContent').innerHTML = `
@@ -1655,6 +1769,37 @@ function overdueCommitPaid(){
 
 function overdueCommitUnpaid(){
   showToast("Marked as still pending — I'll check again next time you open the app.");
+  showNextOverdue();
+}
+
+/* ---- Your own Credit Card bills (not linked to any lend) ---- */
+
+function renderOverdueCardBillAsk(c){
+  const days = daysOverdue(c.dueDate);
+  $('overdueModalContent').innerHTML = `
+    <h3>⏰ Card Bill Due: ${escapeHtml(c.cardName)}</h3>
+    <p>${fmt(c.amount)} was due on ${c.dueDate} (${days} day${days===1?'':'s'} ago).</p>
+    ${escalationBanner(c.overdueSnoozeCount)}
+    <div class="form-actions" style="justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <button class="btn btn-secondary" onclick="overdueSnooze()">⏳ Snooze</button>
+      <button class="btn btn-primary" onclick="overdueGoPayBill()">💳 Go Pay Bill</button>
+    </div>
+  `;
+}
+
+function overdueGoPayBill(){
+  const c = DATA.cards.find(x=>x.id===overdueCurrentId);
+  $('overdueModal').classList.remove('show');
+  document.querySelectorAll('.nav-item').forEach(item=>{
+    if(item.dataset.page === 'lend') item.click();
+  });
+  switchLendTab('charges');
+  if(c){
+    $('cycleCardName').value = c.cardName;
+    $('cycleBillPaid').value = c.amount;
+  }
+  $('cycleDate').value = todayStr();
+  window.scrollTo({top:0,behavior:'smooth'});
   showNextOverdue();
 }
 
@@ -1710,7 +1855,9 @@ function deleteLend(id){
     // Also remove the linked Credit Card transaction, if any, so it doesn't
     // linger as stale outstanding balance.
     if(l && l.transactionId){
+      const linkedCard = DATA.cards.find(c=>c.transactionId===l.transactionId);
       DATA.cards = DATA.cards.filter(c=>c.transactionId!==l.transactionId);
+      if(linkedCard) cloudDelete('cards', linkedCard.id);
     }
     saveData(); cloudDelete('lends', id);updatePersonSuggestions();populateCycleLendOptions();
  renderLends(); renderDashboard(); renderCards();
@@ -2532,11 +2679,11 @@ function daysUntil(dateStr){
 function renderAlerts(){
   const alerts = [];
 
-  // Credit card due dates
+  // Credit card due dates (only your own bills — lend-linked ones resolve via the lend itself)
   DATA.cards.forEach(c=>{
     const days = daysUntil(c.dueDate);
     if(days !== null && days <= 7){
-      alerts.push({title:`${c.cardName} card payment due`, sub:`Due ${c.dueDate}`, amt:fmt(c.amount), days});
+      alerts.push({title:`${c.cardName} card payment due`, sub:`Due ${c.dueDate}`, amt:fmt(c.amount), days, type: c.transactionId ? null : 'cardbill', id:c.id});
     }
   });
 
@@ -2554,7 +2701,7 @@ function renderAlerts(){
     if(l.status === 'Received') return;
     const days = daysUntil(l.dueDate);
     if(days !== null && days <= 7){
-      alerts.push({title:`Collect from ${l.name}`, sub:`Due ${l.dueDate}`, amt:fmt(l.amount), days, type:'collect', id:l.id});
+      alerts.push({title:`Collect from ${l.name}`, sub:`Due ${l.dueDate}`, amt:fmt(l.amount), days, type:'lend', id:l.id});
     }
   });
 
@@ -2568,7 +2715,7 @@ function renderAlerts(){
   list.innerHTML = alerts.map(a=>{
     let cls = a.days < 0 ? 'urgent' : (a.days <= 2 ? 'urgent' : '');
     let dayLabel = a.days < 0 ? `${Math.abs(a.days)} day(s) overdue` : (a.days===0 ? 'Due today' : `In ${a.days} day(s)`);
-    const canResolve = a.days < 0 && (a.type === 'collect' || a.type === 'commit');
+    const canResolve = a.days < 0 && a.type;
     return `<div class="alert-item ${cls}">
       <div><div class="a-title">${escapeHtml(a.title)}</div><div class="a-sub">${a.sub} · ${dayLabel}</div></div>
       <div class="a-amt">${a.amt}</div>
@@ -2578,28 +2725,12 @@ function renderAlerts(){
 }
 
 /** Opens the paid/unpaid resolution flow directly from an Alerts list item. */
+/** Opens the resolution flow directly from an Alerts list item, then chains into
+ * the rest of what's currently overdue once this one is resolved or snoozed. */
 function resolveAlertNow(type, id){
-  overdueQueue = [];
-  if(type === 'collect'){
-    const l = DATA.lends.find(x=>x.id===id);
-    if(!l) return;
-    if(l.source === 'Credit Card'){
-      overdueCurrentId = id;
-      overdueCurrentType = 'lend';
-      renderOverdueStepAsk(l);
-      $('overdueModal').classList.add('show');
-    } else {
-      // No CC charge concept for cash/UPI/bank lends — just edit it directly
-      editLend(id);
-    }
-  } else if(type === 'commit'){
-    const c = DATA.commitments.find(x=>x.id===id);
-    if(!c) return;
-    overdueCurrentId = id;
-    overdueCurrentType = 'commit';
-    renderOverdueCommitAsk(c);
-    $('overdueModal').classList.add('show');
-  }
+  const rest = buildOverdueQueue(true).filter(item => !(item.type === type && item.id === id));
+  overdueQueue = [{type, id}, ...rest];
+  showNextOverdue();
 }
 
 /* ================= CHARTS ================= */
