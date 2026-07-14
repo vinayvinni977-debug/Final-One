@@ -2,29 +2,25 @@
 <html lang="en">
 <head>
   <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2F7A5E">
+<meta name="theme-color" content="#6366f1">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FinTrack — Personal Finance Tracker</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0B0E13; --bg2:#12161D; --card:#161B24; --card2:#1C2230;
-  --border:#262E3D; --text:#E9ECF2; --muted:#8A93A6;
-  --accent:#2F7A5E; --accent2:#3F9975; --gold:#B9903D;
-  --green:#3FA372; --red:#C1554A; --yellow:#C89A3E; --blue:#4C7FAE; --purple:#7C689E; --cyan:#3E93A0;
-  --radius:10px; --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 24px -14px rgba(0,0,0,.5);
-  --font-display:'Fraunces',Georgia,serif; --font-body:'Inter',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif; --font-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --bg:#0f1117; --bg2:#161922; --card:#1c2030; --card2:#22273a;
+  --border:#2a2f42; --text:#e8eaf0; --muted:#8b91a8;
+  --accent:#6366f1; --accent2:#818cf8;
+  --green:#22c55e; --red:#ef4444; --yellow:#f59e0b; --blue:#3b82f6; --purple:#a855f7; --cyan:#06b6d4;
+  --radius:14px; --shadow:0 4px 20px rgba(0,0,0,0.35);
 }
 .light{
-  --bg:#F6F5F0; --bg2:#FFFFFF; --card:#FFFFFF; --card2:#F1EFE7;
-  --border:#E1DECF; --text:#1B1E24; --muted:#6B7280;
-  --shadow:0 1px 2px rgba(20,16,8,.05), 0 8px 20px -12px rgba(20,16,8,.12);
+  --bg:#f4f5f9; --bg2:#ffffff; --card:#ffffff; --card2:#f0f1f6;
+  --border:#e2e4ee; --text:#1a1c29; --muted:#6b7185;
+  --shadow:0 4px 20px rgba(30,30,60,0.08);
 }
-*{margin:0;padding:0;box-sizing:border-box;font-family:var(--font-body);font-variant-numeric:tabular-nums;}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;}
 body{background:var(--bg);color:var(--text);transition:background .25s,color .25s;min-height:100vh;}
 a{color:inherit;}
 button{cursor:pointer;border:none;font-family:inherit;}
@@ -37,26 +33,26 @@ input,select,textarea{font-family:inherit;}
   display:flex;flex-direction:column;padding:20px 14px;position:fixed;top:0;left:0;height:100vh;
   z-index:200;transition:transform .25s;
 }
-.brand{display:flex;align-items:center;gap:10px;padding:8px 10px 24px;font-size:19px;font-weight:600;font-family:var(--font-display);letter-spacing:.2px;}
+.brand{display:flex;align-items:center;gap:10px;padding:8px 10px 24px;font-size:20px;font-weight:700;}
 .brand .logo{
-  width:34px;height:34px;border-radius:8px;background:var(--accent);border:1px solid var(--gold);
-  display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;font-family:var(--font-display);
+  width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--purple));
+  display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;
 }
-.nav-list{list-style:none;display:flex;flex-direction:column;gap:2px;flex:1;}
+.nav-list{list-style:none;display:flex;flex-direction:column;gap:4px;flex:1;}
 .nav-item{
-  display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:8px;color:var(--muted);
-  cursor:pointer;font-size:14.5px;font-weight:500;transition:.15s;border-left:3px solid transparent;
+  display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;color:var(--muted);
+  cursor:pointer;font-size:14.5px;font-weight:500;transition:.15s;
 }
 .nav-item .icon{width:20px;text-align:center;font-size:17px;}
 .nav-item:hover{background:var(--card2);color:var(--text);}
-.nav-item.active{background:var(--card2);color:var(--text);border-left-color:var(--gold);}
+.nav-item.active{background:var(--accent);color:#fff;}
 .sidebar-footer{font-size:11px;color:var(--muted);padding:10px;text-align:center;}
 
 .main{flex:1;margin-left:230px;padding:22px 26px 60px;max-width:100%;}
 .topbar{
   display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;gap:12px;flex-wrap:wrap;
 }
-.topbar h1{font-size:23px;font-weight:600;font-family:var(--font-display);}
+.topbar h1{font-size:24px;font-weight:700;}
 .topbar .sub{color:var(--muted);font-size:13px;margin-top:2px;}
 .menu-toggle{display:none;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:18px;color:var(--text);}
 
@@ -72,19 +68,19 @@ input,select,textarea{font-family:inherit;}
   background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
   padding:18px;box-shadow:var(--shadow);position:relative;overflow:hidden;
 }
-.card .label{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px;}
-.card .value{font-size:25px;font-weight:600;margin-top:8px;font-family:var(--font-mono);letter-spacing:-.3px;}
+.card .label{font-size:12.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.card .value{font-size:26px;font-weight:800;margin-top:8px;}
 .card .icon-badge{
-  position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;font-size:17px;opacity:.95;
+  position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;opacity:.9;
 }
 .card .sub{font-size:12px;color:var(--muted);margin-top:6px;}
-.card.green .icon-badge{background:rgba(63,163,114,.14);color:var(--green);}
-.card.red .icon-badge{background:rgba(193,85,74,.14);color:var(--red);}
-.card.yellow .icon-badge{background:rgba(200,154,62,.14);color:var(--yellow);}
-.card.blue .icon-badge{background:rgba(76,127,174,.14);color:var(--blue);}
-.card.purple .icon-badge{background:rgba(124,104,158,.14);color:var(--purple);}
-.card.cyan .icon-badge{background:rgba(62,147,160,.14);color:var(--cyan);}
+.card.green .icon-badge{background:rgba(34,197,94,.15);color:var(--green);}
+.card.red .icon-badge{background:rgba(239,68,68,.15);color:var(--red);}
+.card.yellow .icon-badge{background:rgba(245,158,11,.15);color:var(--yellow);}
+.card.blue .icon-badge{background:rgba(59,130,246,.15);color:var(--blue);}
+.card.purple .icon-badge{background:rgba(168,85,247,.15);color:var(--purple);}
+.card.cyan .icon-badge{background:rgba(6,182,212,.15);color:var(--cyan);}
 .card.net.pos .value{color:var(--green);}
 .card.net.neg .value{color:var(--red);}
 
@@ -112,27 +108,27 @@ textarea{resize:vertical;min-height:60px;}
 .field{margin-bottom:4px;}
 .form-actions{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;}
 .btn{
-  padding:10px 18px;border-radius:8px;font-size:14px;font-weight:600;transition:.15s;
+  padding:10px 18px;border-radius:9px;font-size:14px;font-weight:600;transition:.15s;
 }
 .btn-primary{background:var(--accent);color:#fff;}
 .btn-primary:hover{background:var(--accent2);}
 .btn-secondary{background:var(--card2);color:var(--text);border:1px solid var(--border);}
 .btn-secondary:hover{background:var(--border);}
-.btn-danger{background:rgba(193,85,74,.14);color:var(--red);border:1px solid rgba(193,85,74,.3);}
-.btn-danger:hover{background:rgba(193,85,74,.24);}
-.btn-sm{padding:6px 10px;font-size:12px;border-radius:6px;}
+.btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.btn-danger:hover{background:rgba(239,68,68,.25);}
+.btn-sm{padding:6px 10px;font-size:12px;border-radius:7px;}
 
 /* Tables */
 .table-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:620px;}
 th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
-th{color:var(--muted);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;}
+th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px;}
 tbody tr:hover{background:var(--card2);}
-.badge{padding:3px 9px;border-radius:4px;font-size:11px;font-weight:600;display:inline-block;font-family:var(--font-mono);letter-spacing:.2px;}
-.badge.pending{background:rgba(200,154,62,.14);color:var(--yellow);}
-.badge.partial{background:rgba(76,127,174,.14);color:var(--blue);}
-.badge.received,.badge.paid{background:rgba(63,163,114,.14);color:var(--green);}
-.badge.unpaid,.badge.due{background:rgba(193,85,74,.14);color:var(--red);}
+.badge{padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700;display:inline-block;}
+.badge.pending{background:rgba(245,158,11,.15);color:var(--yellow);}
+.badge.partial{background:rgba(59,130,246,.15);color:var(--blue);}
+.badge.received,.badge.paid{background:rgba(34,197,94,.15);color:var(--green);}
+.badge.unpaid,.badge.due{background:rgba(239,68,68,.15);color:var(--red);}
 .row-actions{display:flex;gap:6px;}
 .empty-row td{text-align:center;color:var(--muted);padding:24px;}
 
@@ -146,7 +142,7 @@ tbody tr:hover{background:var(--card2);}
 .alert-item.ok{border-left-color:var(--green);}
 .alert-item .a-title{font-weight:600;font-size:14px;}
 .alert-item .a-sub{font-size:12px;color:var(--muted);}
-.alert-item .a-amt{font-weight:600;font-size:14px;font-family:var(--font-mono);}
+.alert-item .a-amt{font-weight:700;font-size:14px;}
 
 /* Filters */
 .filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
@@ -183,14 +179,14 @@ input:checked + .slider:before{transform:translateX(20px);}
 .report-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px;}
 .report-summary .mini{background:var(--card2);padding:14px;border-radius:10px;}
 .report-summary .mini .label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;}
-.report-summary .mini .val{font-size:18px;font-weight:600;margin-top:4px;font-family:var(--font-mono);}
+.report-summary .mini .val{font-size:18px;font-weight:800;margin-top:4px;}
 
 /* Modal-ish confirm */
 .overlay{
   position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:500;
 }
 .overlay.show{display:flex;}
-.confirm-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;max-width:340px;text-align:center;box-shadow:var(--shadow);}
+.confirm-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:340px;text-align:center;box-shadow:var(--shadow);}
 .confirm-box p{margin:10px 0 18px;color:var(--muted);font-size:14px;}
 .confirm-box .form-actions{justify-content:center;}
 
@@ -1669,7 +1665,7 @@ function viewLendHistory(id){
   const totalCharges = history.reduce((s,c)=>s+(Number(c.charge)||0),0);
 
   let html = `
-    <div style="padding:10px;border-bottom:1px solid var(--border);">
+    <div style="padding:10px;border-bottom:1px solid #444;">
       <b>${escapeHtml(l.name)}</b> — ${l.source === 'Credit Card' ? `via ${escapeHtml(l.cardName||'')} Credit Card` : escapeHtml(l.source||'Cash')}<br>
       Principal: ₹${(l.principal||0).toFixed(2)}<br>
       Total Charges: ₹${totalCharges.toFixed(2)}<br>
@@ -1682,7 +1678,7 @@ function viewLendHistory(id){
   } else {
     [...history].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).forEach(c=>{
       html += `
-      <div style="padding:10px;border-bottom:1px solid var(--border);">
+      <div style="padding:10px;border-bottom:1px solid #444;">
         📅 ${c.date||'—'}<br>
         Withdrawn: ₹${(Number(c.withdrawn)||0).toFixed(2)}<br>
         <b>Charge: ₹${(Number(c.charge)||0).toFixed(2)}</b>
@@ -1813,7 +1809,7 @@ function viewPersonBreakdown(name){
   const totalPending = Math.max(0, totalGiven - totalReceived);
 
   let html = `
-    <div style="padding:10px;border-bottom:1px solid var(--border);">
+    <div style="padding:10px;border-bottom:1px solid #444;">
       <b>${escapeHtml(name)}</b> — ${entries.length} entr${entries.length===1?'y':'ies'} across ${new Set(entries.map(l=>l.source==='Credit Card'?l.cardName:l.source)).size} source(s)<br>
       Total Given: ${fmt(totalGiven)}<br>
       Total Received: ${fmt(totalReceived)}<br>
@@ -1824,7 +1820,7 @@ function viewPersonBreakdown(name){
     const isCC = l.source === 'Credit Card';
     const pending = Math.max(0, (Number(l.amount)||0) - (Number(l.received)||0));
     html += `
-    <div style="padding:10px;border-bottom:1px solid var(--border);">
+    <div style="padding:10px;border-bottom:1px solid #444;">
       ${isCC ? `💳 ${escapeHtml(l.cardName||'')}` : escapeHtml(l.source||'Cash')}<br>
       Given: ${fmt(l.amount)} · Received: ${fmt(l.received||0)} · Pending: ${fmt(pending)}<br>
       <span class="sub">Given on ${l.dateGiven||'—'}${l.dueDate ? `, due ${l.dueDate}` : ''} · ${l.status}</span><br>
@@ -2549,7 +2545,7 @@ function renderAlerts(){
     if(c.status === 'Paid') return;
     const days = daysUntil(c.dueDate);
     if(days !== null && days <= 7){
-      alerts.push({title:`${c.name} payment due`, sub:`Due ${c.dueDate}`, amt:fmt(c.amount), days});
+      alerts.push({title:`${c.name} payment due`, sub:`Due ${c.dueDate}`, amt:fmt(c.amount), days, type:'commit', id:c.id});
     }
   });
 
@@ -2558,7 +2554,7 @@ function renderAlerts(){
     if(l.status === 'Received') return;
     const days = daysUntil(l.dueDate);
     if(days !== null && days <= 7){
-      alerts.push({title:`Collect from ${l.name}`, sub:`Due ${l.dueDate}`, amt:fmt(l.amount), days, type:'collect'});
+      alerts.push({title:`Collect from ${l.name}`, sub:`Due ${l.dueDate}`, amt:fmt(l.amount), days, type:'collect', id:l.id});
     }
   });
 
@@ -2572,11 +2568,38 @@ function renderAlerts(){
   list.innerHTML = alerts.map(a=>{
     let cls = a.days < 0 ? 'urgent' : (a.days <= 2 ? 'urgent' : '');
     let dayLabel = a.days < 0 ? `${Math.abs(a.days)} day(s) overdue` : (a.days===0 ? 'Due today' : `In ${a.days} day(s)`);
+    const canResolve = a.days < 0 && (a.type === 'collect' || a.type === 'commit');
     return `<div class="alert-item ${cls}">
       <div><div class="a-title">${escapeHtml(a.title)}</div><div class="a-sub">${a.sub} · ${dayLabel}</div></div>
       <div class="a-amt">${a.amt}</div>
+      ${canResolve ? `<button class="btn btn-primary btn-sm" onclick="resolveAlertNow('${a.type}','${a.id}')">Resolve</button>` : ''}
     </div>`;
   }).join('');
+}
+
+/** Opens the paid/unpaid resolution flow directly from an Alerts list item. */
+function resolveAlertNow(type, id){
+  overdueQueue = [];
+  if(type === 'collect'){
+    const l = DATA.lends.find(x=>x.id===id);
+    if(!l) return;
+    if(l.source === 'Credit Card'){
+      overdueCurrentId = id;
+      overdueCurrentType = 'lend';
+      renderOverdueStepAsk(l);
+      $('overdueModal').classList.add('show');
+    } else {
+      // No CC charge concept for cash/UPI/bank lends — just edit it directly
+      editLend(id);
+    }
+  } else if(type === 'commit'){
+    const c = DATA.commitments.find(x=>x.id===id);
+    if(!c) return;
+    overdueCurrentId = id;
+    overdueCurrentType = 'commit';
+    renderOverdueCommitAsk(c);
+    $('overdueModal').classList.add('show');
+  }
 }
 
 /* ================= CHARTS ================= */
@@ -2584,9 +2607,9 @@ let charts = {};
 function getThemeColors(){
   const isLight = document.body.classList.contains('light');
   return {
-    text: isLight ? '#1B1E24' : '#E9ECF2',
-    grid: isLight ? '#E1DECF' : '#262E3D',
-    palette: ['#2F7A5E','#B9903D','#4C7FAE','#C1554A','#7C689E','#3E93A0','#3FA372','#C89A3E']
+    text: isLight ? '#1a1c29' : '#e8eaf0',
+    grid: isLight ? '#e2e4ee' : '#2a2f42',
+    palette: ['#6366f1','#22c55e','#f59e0b','#ef4444','#3b82f6','#a855f7','#06b6d4','#ec4899']
   };
 }
 function destroyChart(key){ if(charts[key]){ charts[key].destroy(); delete charts[key]; } }
@@ -2615,7 +2638,7 @@ function renderTrendChart(){
   destroyChart('trend');
   charts.trend = new Chart($('chartTrend'), {
     type:'line',
-    data:{ labels, datasets:[{ label:'Expenses', data: totals, borderColor:'#2F7A5E', backgroundColor:'rgba(47,122,94,0.15)', tension:0.35, fill:true, pointBackgroundColor:'#2F7A5E' }] },
+    data:{ labels, datasets:[{ label:'Expenses', data: totals, borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,0.15)', tension:0.35, fill:true, pointBackgroundColor:'#6366f1' }] },
     options:{ responsive:true, plugins:{legend:{display:false}}, scales:{
       x:{ ticks:{color:colors.text}, grid:{color:colors.grid} },
       y:{ ticks:{color:colors.text}, grid:{color:colors.grid}, beginAtZero:true }
@@ -2632,7 +2655,7 @@ function renderCategoryChart(){
   destroyChart('category');
   charts.category = new Chart($('chartCategory'), {
     type:'doughnut',
-    data:{ labels: cats, datasets:[{ data: hasData ? data : [1], backgroundColor: hasData ? colors.palette : ['#262E3D'], borderWidth:0 }] },
+    data:{ labels: cats, datasets:[{ data: hasData ? data : [1], backgroundColor: hasData ? colors.palette : ['#2a2f42'], borderWidth:0 }] },
     options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{color:colors.text, boxWidth:12, font:{size:11}} } } }
   });
 }
@@ -2645,7 +2668,7 @@ function renderCardUsageChart(){
   destroyChart('cards');
   charts.cards = new Chart($('chartCards'), {
     type:'bar',
-    data:{ labels: CARD_NAMES, datasets:[{ label:'Outstanding', data: hasData?data:[0,0,0,0,0], backgroundColor:'#B9903D', borderRadius:4 }] },
+    data:{ labels: CARD_NAMES, datasets:[{ label:'Outstanding', data: hasData?data:[0,0,0,0,0], backgroundColor:'#a855f7', borderRadius:6 }] },
     options:{ responsive:true, plugins:{legend:{display:false}}, scales:{
       x:{ ticks:{color:colors.text}, grid:{display:false} },
       y:{ ticks:{color:colors.text}, grid:{color:colors.grid}, beginAtZero:true }
@@ -2666,7 +2689,7 @@ function renderLendChart(){
   destroyChart('lend');
   charts.lend = new Chart($('chartLend'), {
     type:'bar',
-    data:{ labels:['Total Lent','Received (est.)','Pending'], datasets:[{ data:[lent, received, pending], backgroundColor:['#4C7FAE','#3FA372','#C89A3E'], borderRadius:4 }] },
+    data:{ labels:['Total Lent','Received (est.)','Pending'], datasets:[{ data:[lent, received, pending], backgroundColor:['#3b82f6','#22c55e','#f59e0b'], borderRadius:6 }] },
     options:{ responsive:true, plugins:{legend:{display:false}}, scales:{
       x:{ ticks:{color:colors.text}, grid:{display:false} },
       y:{ ticks:{color:colors.text}, grid:{color:colors.grid}, beginAtZero:true }
@@ -2890,7 +2913,7 @@ function showDashboardDetails(type){
      if(pending > 0){
 
       html += `
-      <div style="padding:10px;border-bottom:1px solid var(--border);">
+      <div style="padding:10px;border-bottom:1px solid #444;">
       <b>${escapeHtml(name)}</b><br>
       Given: ₹${g.given.toLocaleString()}<br>
       Received: ₹${g.received.toLocaleString()}<br>
@@ -2924,7 +2947,7 @@ function showDashboardDetails(type){
      if(remaining > 0){
 
       html += `
-      <div style="padding:10px;border-bottom:1px solid var(--border);">
+      <div style="padding:10px;border-bottom:1px solid #444;">
       <b>${escapeHtml(name)}</b><br>
       Borrowed: ₹${g.borrowed.toLocaleString()}<br>
       Paid: ₹${g.paid.toLocaleString()}<br>
@@ -2941,7 +2964,7 @@ function showDashboardDetails(type){
 
    DATA.expenses.forEach(x=>{
       html+=`
-      <div style="padding:10px;border-bottom:1px solid var(--border);">
+      <div style="padding:10px;border-bottom:1px solid #444;">
       ₹${x.amount} - ${x.category}<br>
       ${x.date}
       </div>`;
@@ -2959,7 +2982,7 @@ function showDashboardDetails(type){
       .reduce((a,b)=>a+b.amount,0);
 
       html+=`
-      <div style="padding:10px;border-bottom:1px solid var(--border);">
+      <div style="padding:10px;border-bottom:1px solid #444;">
       ${card}: ₹${total}
       </div>`;
    });
@@ -2971,7 +2994,7 @@ function showDashboardDetails(type){
 
    DATA.commitments.forEach(x=>{
       html+=`
-      <div style="padding:10px;border-bottom:1px solid var(--border);">
+      <div style="padding:10px;border-bottom:1px solid #444;">
       ${x.name}<br>
       Amount: ₹${x.amount}<br>
       Due: ${x.dueDate}<br>
@@ -2986,7 +3009,7 @@ function showDashboardDetails(type){
 
    DATA.cycles.forEach(x=>{
       html+=`
-      <div style="padding:10px;border-bottom:1px solid var(--border);">
+      <div style="padding:10px;border-bottom:1px solid #444;">
       ${x.cardName}<br>
       Bill Paid: ₹${x.billPaid}<br>
       Date: ${x.date}
@@ -3069,6 +3092,15 @@ setInterval(() => {
     dataChanged = false;
   }
 }, 30000);
+
+// Re-check for newly-overdue items every 5 minutes while the app stays open,
+// but never interrupt a popup the user is already in the middle of resolving.
+setInterval(() => {
+  renderAlerts();
+  if (!$('overdueModal').classList.contains('show')) {
+    checkOverdueLends();
+  }
+}, 5 * 60 * 1000);
 </script>
 <script>
 let deferredPrompt;
@@ -3113,14 +3145,13 @@ z-index:999999;
 ">
 
 <div style="
-background:var(--card);
+background:#1c2030;
 margin:40px auto;
 padding:20px;
 width:90%;
 max-width:700px;
-border-radius:10px;
-color:var(--text);
-border:1px solid var(--border);
+border-radius:12px;
+color:white;
 max-height:80vh;
 overflow:auto;
 ">
@@ -3137,7 +3168,7 @@ style="
 padding:10px 20px;
 border:none;
 border-radius:8px;
-background:var(--red);
+background:#ef4444;
 color:white;
 ">
 Close
